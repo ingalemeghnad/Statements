@@ -1,0 +1,388 @@
+🔷 CONTEXT
+
+Build a Spring Boot 3 (Java 17) standalone MT statement processing service.
+
+Supported message types:
+	•	MT940
+	•	MT941
+	•	MT942
+	•	MT950
+
+The service must:
+	1.	Ingest MT messages from ODS (strategy pluggable: polling/event)
+	2.	Parse MT messages
+	3.	Perform 1-hour aggregation for multi-page statements
+	4.	Apply routing rules (file + CRUD API)
+	5.	Apply relay configuration (separate table)
+	6.	Deliver messages (mock delivery for POC)
+	7.	Include sample data to test end-to-end locally
+
+Deploy as a single service with modular structure.
+
+⸻
+
+🔷 HIGH-LEVEL FLOW
+
+ODS → IngestionStrategy → Parser → Aggregation → Routing → Delivery
+                                  ↘ Scheduler (expiry)
+Rule File → Rule Loader → RoutingRule table
+CRUD API → RoutingRule + RelayConfig tables
+
+Routing and Relay decisions both apply independently.
+
+⸻
+
+🔷 INGESTION STRATEGY (PLUGGABLE)
+
+Define interface:
+
+public interface MtIngestionStrategy {
+    void start();
+}
+
+Provide:
+	1.	PollingOdsIngestionStrategy (fully implemented)
+	2.	EventDrivenOdsIngestionStrategy (POC stub only)
+
+Property:
+
+mt.ingestion.mode=POLLING|EVENT
+
+Polling mode:
+	•	Batch size configurable (default 200)
+	•	Poll interval configurable (default 5 seconds)
+	•	Uses:
+
+SELECT *
+FROM mt_message_ods
+WHERE status = 'NEW'
+ORDER BY id
+FOR UPDATE SKIP LOCKED
+LIMIT :batchSize;
+
+Mark rows PROCESSING before processing.
+
+⸻
+
+🔷 ODS TABLE (AUTO-CREATED VIA FLYWAY)
+
+mt_message_ods
+---------------
+id BIGSERIAL PRIMARY KEY
+raw_message TEXT
+status VARCHAR(20)
+retry_count INT
+error_reason TEXT
+created_at TIMESTAMP
+updated_at TIMESTAMP
+
+Statuses:
+	•	NEW
+	•	PROCESSING
+	•	COMPLETED
+	•	FAILED
+
+⸻
+
+🔷 MT PARSER
+
+Parse:
+	•	:20:
+	•	:25:
+	•	:28C:
+	•	Sender BIC
+	•	Receiver BIC
+	•	Message Type
+
+Return:
+
+MtStatement {
+   messageType
+   accountNumber
+   statementNumber
+   pageNumber
+   totalPages
+   senderBic
+   receiverBic
+   transactionReference
+   rawMessage
+}
+
+
+⸻
+
+🔷 AGGREGATION MODULE
+
+Requirements:
+	•	DB-backed
+	•	1-hour expiry
+	•	Optimistic locking
+	•	Duplicate page detection via checksum
+	•	Scheduler every 60 sec
+
+Entities:
+
+MtAggregation
+MtAggregationPage
+
+AggregationResult:
+
+class AggregationResult {
+   boolean rejected;
+   boolean readyForRouting;
+   MtStatement combinedStatement;
+}
+
+Timeout handling:
+	•	Mark REJECTED
+	•	Update ODS row to FAILED
+
+⸻
+
+🔷 ROUTING MODULE
+
+RoutingRule Table
+
+routing_rule
+-------------
+id
+account_number
+message_type
+sender_bic
+receiver_bic
+destination_queue
+active
+batch_id
+source (FILE | UI)
+created_at
+updated_at
+
+RelayConfig Table
+
+relay_config
+--------------
+id
+account_number
+sender_bic
+receiver_bic
+active
+created_at
+updated_at
+
+RoutingService must:
+	•	Cache routing rules
+	•	Cache relay configs
+	•	Evaluate both independently
+	•	Produce:
+
+DeliveryInstruction {
+   List<String> downstreamDestinations;
+   boolean relayToSwift;
+}
+
+Rule evaluation logic:
+
+destinations = matching routing_rule rows
+relayToSwift = matching relay_config exists
+
+Both can apply simultaneously.
+
+⸻
+
+🔷 RULE LOADER
+	•	Reads CSV file from configurable directory
+	•	Runs daily OR triggered via REST endpoint (for POC)
+	•	Only replaces FILE-based rules
+	•	Does not delete UI rules
+	•	Transactional batch replace
+	•	Clears routing cache after load
+
+Provide sample CSV in project resources.
+
+⸻
+
+🔷 CRUD APIs
+
+Routing Rules
+
+POST   /api/routing-rules
+PUT    /api/routing-rules/{id}
+GET    /api/routing-rules
+DELETE /api/routing-rules/{id}
+
+Relay Config
+
+POST   /api/relay-config
+PUT    /api/relay-config/{id}
+GET    /api/relay-config
+DELETE /api/relay-config/{id}
+
+Add basic in-memory security for POC.
+
+⸻
+
+🔷 DELIVERY MODULE (POC WITHOUT MQ)
+
+Define:
+
+interface DeliveryAdapter
+
+Implement:
+	1.	MockDeliveryAdapter (default)
+	•	Stores delivered messages in in-memory list
+	•	Logs deliveries
+	•	Expose:
+
+GET /test/deliveries
+
+to view deliveries
+
+	2.	MqDeliveryAdapter (config-only stub for future)
+
+Property:
+
+mt.delivery.mode=MOCK|MQ
+
+DeliveryService:
+	•	Async
+	•	Retry 3 times
+	•	Separate thread pool
+	•	Relay uses same adapter but destination = SWIFT.RELAY
+
+⸻
+
+🔷 SAMPLE DATA GENERATION (IMPORTANT)
+
+At application startup (via CommandLineRunner or data.sql):
+
+Insert:
+
+1️⃣ Sample ODS Messages
+	•	Single-page MT940
+	•	Multi-page MT940 (2 pages)
+	•	MT942 example
+
+Include valid SWIFT MT format in raw_message field.
+
+Example minimal MT940 sample:
+
+{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+:20:REF123
+:25:123456789
+:28C:00001/001
+:60F:C210101EUR1000,
+:61:2101010101DR100,
+:62F:C210101EUR900,
+-}
+
+Multi-page example:
+
+Page 1:
+:28C:00002/001
+
+Page 2:
+:28C:00002/002
+
+⸻
+
+2️⃣ Sample Routing Rules
+
+Insert:
+	•	Rule for account 123456789
+	•	MessageType MT940
+	•	Destination REPORTING.Q1
+
+⸻
+
+3️⃣ Sample Relay Config
+
+Insert:
+	•	account 123456789
+	•	sender BANKGB22
+	•	receiver CLIENTBICXXXX
+
+⸻
+
+🔷 END-TO-END TEST REQUIREMENT
+
+Provide integration test:
+	1.	Insert sample ODS row
+	2.	Trigger polling
+	3.	Assert:
+	•	Aggregation works
+	•	Routing applied
+	•	MockDeliveryAdapter contains:
+	•	REPORTING.Q1
+	•	SWIFT.RELAY (because relay config exists)
+
+Also provide test for:
+	•	Aggregation timeout
+	•	CRUD rule update
+	•	File rule load
+
+⸻
+
+🔷 METRICS
+
+Expose via Actuator:
+	•	mt.ingestion.processed
+	•	mt.aggregation.completed
+	•	mt.aggregation.rejected
+	•	mt.routing.cache.hit
+	•	mt.delivery.success
+	•	mt.delivery.failure
+
+⸻
+
+🔷 THREAD POOLS
+
+Define configurable executors:
+	•	ingestionExecutor
+	•	aggregationExecutor
+	•	deliveryExecutor
+
+⸻
+
+🔷 PROJECT STRUCTURE
+
+com.bank.mt
+
+  ingestion/
+  parsing/
+  aggregation/
+  routing/
+  ruleloader/
+  delivery/
+  controller/
+  repository/
+  scheduler/
+  domain/
+  config/
+  test/
+
+
+⸻
+
+🔷 OUTPUT EXPECTATION
+
+Generate:
+	•	Complete runnable Spring Boot project
+	•	Flyway migration scripts
+	•	application.yml
+	•	Sample CSV rule file
+	•	Sample ODS data insert script
+	•	All modules
+	•	Mock delivery adapter
+	•	Integration tests
+	•	Clear architectural comments
+	•	README explaining how to run locally
+
+The project must run locally with:
+
+./mvnw spring-boot:run
+
+And allow testing via:
+
+GET /test/deliveries
+
+No external MQ required.
