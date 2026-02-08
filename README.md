@@ -118,3 +118,7 @@ Available at `/actuator/metrics`:
 - `mt.routing.cache.hit` — routing rule cache hits
 - `mt.delivery.success` — successful deliveries
 - `mt.delivery.failure` — failed deliveries
+
+what bic/branches statements processor should consider or exclude? all excluding some branches including XXX?
+statement relay - what happens if it cant find config. what are rules for this in routing.
+
