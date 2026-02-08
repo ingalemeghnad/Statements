@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant SWIFT as SWIFT Network
+    participant GW as SWIFT Gateway
+    participant PROC as Statement Processor
+    participant AGG as Aggregation Engine
+    participant POLICY as Policy Engine
+    participant DEL as Delivery Engine
+    participant PREF as Preference Feed
+    participant DS as Downstream System(s)
+
+    SWIFT->>GW: MT940 / MT941 / MT942 / MT950
+    GW->>PROC: Forward Message
+
+    PROC->>AGG: Check if aggregation required
+
+    alt Multi-page
+        AGG->>AGG: Store page
+        AGG->>AGG: Wait up to 1 hour
+        alt All pages received
+            AGG-->>PROC: Combined Statement
+        else Timeout
+            AGG-->>PROC: Reject
+        end
+    else Single-page
+        AGG-->>PROC: Pass-through
+    end
+
+    alt Not Rejected
+        PROC->>POLICY: Evaluate Routing + Relay Rules
+        POLICY->>PREF: Use Preferences
+        PREF-->>POLICY: Preference Data
+        POLICY-->>PROC: Delivery Instructions
+
+        PROC->>DEL: Execute Delivery
+
+        DEL->>DS: Send to Downstream(s)
+        alt Relay Required
+            DEL->>GW: Send to SWIFT
+            GW->>SWIFT: Forward Message
+        end
+    end
