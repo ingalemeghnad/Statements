@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MT Statement Processor - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f6f9; font-size: 0.9rem; }
+        .pipeline { display: flex; align-items: center; gap: 0; flex-wrap: wrap; justify-content: center; }
+        .pipeline-step {
+            background: #fff; border: 2px solid #dee2e6; border-radius: 12px;
+            padding: 16px 22px; text-align: center; min-width: 130px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .pipeline-step.active { border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+        .pipeline-arrow { font-size: 1.5rem; color: #adb5bd; padding: 0 4px; }
+        .pipeline-step .count { font-size: 1.6rem; font-weight: 700; color: #0d6efd; }
+        .pipeline-step .label { font-size: 0.75rem; text-transform: uppercase; color: #6c757d; letter-spacing: 0.5px; }
+        .badge-NEW { background: #0dcaf0; color: #000; }
+        .badge-PROCESSING { background: #ffc107; color: #000; }
+        .badge-COMPLETED { background: #198754; }
+        .badge-FAILED { background: #dc3545; }
+        .badge-IN_PROGRESS { background: #ffc107; color: #000; }
+        .badge-REJECTED { background: #dc3545; }
+        .badge-ALLOWED_BIC { background: #198754; }
+        .badge-EXCLUDED_BRANCH { background: #fd7e14; color: #000; }
+        .msg-preview { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; font-size: 0.8rem; }
+        .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .section-title { font-weight: 600; font-size: 1rem; }
+        .table { font-size: 0.85rem; }
+        .table th { font-weight: 600; white-space: nowrap; }
+        #submitMsg { font-family: monospace; font-size: 0.78rem; }
+        .refresh-indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .refresh-on { background: #198754; animation: pulse 1.5s infinite; }
+        .refresh-off { background: #dc3545; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .nav-brand { font-weight: 700; letter-spacing: -0.5px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-3">
+    <div class="container-fluid">
+        <span class="navbar-brand nav-brand"><i class="bi bi-bank2 me-2"></i>MT Statement Processor</span>
+        <span class="text-light d-flex align-items-center gap-2" style="font-size:0.82rem;">
+            <span class="refresh-indicator" id="refreshDot"></span>
+            <span id="refreshLabel">Auto-refresh ON</span>
+            <button class="btn btn-sm btn-outline-light ms-1" id="toggleRefresh" title="Toggle auto-refresh">
+                <i class="bi bi-pause-fill" id="toggleIcon"></i>
+            </button>
+        </span>
+    </div>
+</nav>
+
+<div class="container-fluid px-4">
+
+    <!-- Pipeline Visualization -->
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="pipeline" id="pipeline">
+                <div class="pipeline-step active">
+                    <div class="count" id="p-ods">-</div>
+                    <div class="label">ODS Messages</div>
+                </div>
+                <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="pipeline-step">
+                    <div class="count" id="p-parsed">-</div>
+                    <div class="label">Parsed</div>
+                </div>
+                <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="pipeline-step">
+                    <div class="count" id="p-aggregated">-</div>
+                    <div class="label">Aggregated</div>
+                </div>
+                <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="pipeline-step">
+                    <div class="count" id="p-routed">-</div>
+                    <div class="label">Routed</div>
+                </div>
+                <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="pipeline-step">
+                    <div class="count" id="p-delivered">-</div>
+                    <div class="label">Delivered</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Left column -->
+        <div class="col-lg-4">
+            <!-- Submit Message -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="section-title"><i class="bi bi-send me-1"></i>Submit MT Message</h6>
+                    <textarea class="form-control mb-2" id="submitMsg" rows="10">{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+:20:NEWREF001
+:25:123456789
+:28C:00001/001
+:60F:C210301EUR2000,
+:61:2103010301DR150,NTRFREF010//ACCT-OWNER
+:62F:C210301EUR1850,
+-}</textarea>
+                    <button class="btn btn-primary btn-sm w-100" id="submitBtn">
+                        <i class="bi bi-plus-circle me-1"></i>Submit to ODS
+                    </button>
+                    <div id="submitStatus" class="mt-2"></div>
+                </div>
+            </div>
+
+            <!-- Routing Rules -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="section-title mb-0"><i class="bi bi-signpost-split me-1"></i>Routing Rules</h6>
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#ruleForm">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    <div class="collapse mb-2" id="ruleForm">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="row g-1 mb-1">
+                                <div class="col-6"><input class="form-control form-control-sm" id="rf-acct" placeholder="Account #"></div>
+                                <div class="col-6"><input class="form-control form-control-sm" id="rf-type" placeholder="Msg Type (MT940)"></div>
+                            </div>
+                            <div class="row g-1 mb-1">
+                                <div class="col-6"><input class="form-control form-control-sm" id="rf-sbic" placeholder="Sender BIC"></div>
+                                <div class="col-6"><input class="form-control form-control-sm" id="rf-rbic" placeholder="Receiver BIC"></div>
+                            </div>
+                            <div class="row g-1 mb-1">
+                                <div class="col-8"><input class="form-control form-control-sm" id="rf-dest" placeholder="Destination Queue"></div>
+                                <div class="col-4">
+                                    <button class="btn btn-primary btn-sm w-100" id="addRuleBtn">Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height:220px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>Acct</th><th>Type</th><th>Dest</th><th>On</th><th></th></tr></thead>
+                            <tbody id="rulesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relay Config -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="section-title mb-0"><i class="bi bi-arrow-repeat me-1"></i>Relay Config</h6>
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#relayForm">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    <div class="collapse mb-2" id="relayForm">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="row g-1 mb-1">
+                                <div class="col-4"><input class="form-control form-control-sm" id="rl-acct" placeholder="Account #"></div>
+                                <div class="col-4"><input class="form-control form-control-sm" id="rl-sbic" placeholder="Sender BIC"></div>
+                                <div class="col-4"><input class="form-control form-control-sm" id="rl-rbic" placeholder="Receiver BIC"></div>
+                            </div>
+                            <button class="btn btn-primary btn-sm w-100 mt-1" id="addRelayBtn">Add</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height:180px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>Acct</th><th>Sender</th><th>Receiver</th><th>On</th><th></th></tr></thead>
+                            <tbody id="relayBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Aggregation BIC Filters -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="section-title mb-0"><i class="bi bi-funnel me-1"></i>Aggregation BIC Filters</h6>
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#aggFilterForm">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    <div class="collapse mb-2" id="aggFilterForm">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="row g-1 mb-1">
+                                <div class="col-7"><input class="form-control form-control-sm" id="af-bic" placeholder="BIC / Branch code"></div>
+                                <div class="col-5">
+                                    <select class="form-select form-select-sm" id="af-type">
+                                        <option value="ALLOWED_BIC">Allowed BIC</option>
+                                        <option value="EXCLUDED_BRANCH">Excluded Branch</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm w-100 mt-1" id="addAggFilterBtn">Add</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height:180px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>Value</th><th>Type</th><th>On</th><th></th></tr></thead>
+                            <tbody id="aggFilterBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routing BIC Exclusions -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="section-title mb-0"><i class="bi bi-x-octagon me-1"></i>Routing BIC Exclusions</h6>
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#routeExclForm">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    <div class="collapse mb-2" id="routeExclForm">
+                        <div class="border rounded p-2 bg-light">
+                            <input class="form-control form-control-sm mb-1" id="re-bic" placeholder="Receiver BIC">
+                            <button class="btn btn-primary btn-sm w-100" id="addRouteExclBtn">Add</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height:150px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>Receiver BIC</th><th>On</th><th></th></tr></thead>
+                            <tbody id="routeExclBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="col-lg-8">
+            <!-- ODS Messages -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="section-title"><i class="bi bi-inbox me-1"></i>ODS Messages</h6>
+                    <div class="table-responsive" style="max-height:280px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>ID</th><th>Status</th><th>Retries</th><th>Error</th><th>Preview</th><th>Created</th></tr></thead>
+                            <tbody id="odsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aggregations -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="section-title"><i class="bi bi-layers me-1"></i>Aggregations</h6>
+                    <div class="table-responsive" style="max-height:220px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>ID</th><th>Stmt#</th><th>Account</th><th>Type</th><th>Pages</th><th>Status</th><th>Updated</th></tr></thead>
+                            <tbody id="aggBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deliveries -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="section-title mb-0"><i class="bi bi-check2-circle me-1"></i>Deliveries</h6>
+                        <button class="btn btn-outline-danger btn-sm" id="clearDeliveries" title="Clear all deliveries">
+                            <i class="bi bi-trash3 me-1"></i>Clear
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="max-height:220px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light"><tr><th>Destination</th><th>Type</th><th>Account</th><th>Ref</th><th>Delivered At</th><th>Message</th></tr></thead>
+                            <tbody id="delBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Raw Message Modal -->
+<div class="modal fade" id="msgModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">Raw Message</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre class="bg-light p-3 rounded" id="msgModalBody" style="white-space:pre-wrap; font-size:0.82rem; max-height:60vh; overflow-y:auto;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // Basic Auth for /api/** endpoints
+    const AUTH = 'Basic ' + btoa('admin:admin123');
+    const API_HEADERS = { 'Content-Type': 'application/json', 'Authorization': AUTH };
+
+    let refreshOn = true;
+    let refreshTimer = null;
+
+    // --- DOM refs ---
+    const $ = id => document.getElementById(id);
+    const refreshDot = $('refreshDot');
+    const refreshLabel = $('refreshLabel');
+    const toggleIcon = $('toggleIcon');
+
+    // --- Auto-refresh toggle ---
+    $('toggleRefresh').addEventListener('click', () => {
+        refreshOn = !refreshOn;
+        if (refreshOn) {
+            refreshDot.className = 'refresh-indicator refresh-on';
+            refreshLabel.textContent = 'Auto-refresh ON';
+            toggleIcon.className = 'bi bi-pause-fill';
+            startRefresh();
+        } else {
+            refreshDot.className = 'refresh-indicator refresh-off';
+            refreshLabel.textContent = 'Auto-refresh OFF';
+            toggleIcon.className = 'bi bi-play-fill';
+            stopRefresh();
+        }
+    });
+
+    function startRefresh() { stopRefresh(); refreshTimer = setInterval(loadAll, 3000); }
+    function stopRefresh() { if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; } }
+
+    // --- API helpers ---
+    async function get(url, auth) {
+        const opts = auth ? { headers: { 'Authorization': AUTH } } : {};
+        const res = await fetch(url, opts);
+        return res.json();
+    }
+    async function post(url, body, auth) {
+        const headers = auth ? API_HEADERS : { 'Content-Type': 'application/json' };
+        return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    }
+    async function del(url, auth) {
+        const headers = auth ? { 'Authorization': AUTH } : {};
+        return fetch(url, { method: 'DELETE', headers });
+    }
+
+    // --- Formatters ---
+    function badge(status) {
+        return `<span class="badge badge-${status}">${status}</span>`;
+    }
+    function fmtTime(dt) {
+        if (!dt) return '-';
+        // handle both array [y,m,d,h,min,s] and ISO string
+        if (Array.isArray(dt)) {
+            const [y,mo,d,h,mi,s] = dt;
+            return `${String(mo).padStart(2,'0')}/${String(d).padStart(2,'0')} ${String(h||0).padStart(2,'0')}:${String(mi||0).padStart(2,'0')}:${String(s||0).padStart(2,'0')}`;
+        }
+        const t = new Date(dt);
+        return isNaN(t) ? dt : t.toLocaleTimeString();
+    }
+    function esc(s) {
+        if (s == null) return '';
+        const d = document.createElement('div');
+        d.textContent = String(s);
+        return d.innerHTML;
+    }
+
+    // --- Load ODS messages ---
+    async function loadOds() {
+        try {
+            const msgs = await get('/test/ods-messages');
+            const body = $('odsBody');
+            if (!msgs.length) { body.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No messages</td></tr>'; return; }
+            body.innerHTML = msgs.map(m => `<tr>
+                <td>${m.id}</td>
+                <td>${badge(m.status)}</td>
+                <td>${m.retryCount || 0}</td>
+                <td>${esc(m.errorReason) || '-'}</td>
+                <td><span class="msg-preview" role="button" onclick="showMsg(${m.id})" title="Click to view">${esc(m.rawMessage?.substring(0,60))}</span></td>
+                <td>${fmtTime(m.createdAt)}</td>
+            </tr>`).join('');
+            // store for modal
+            window._odsMessages = msgs;
+        } catch(e) { console.error('loadOds', e); }
+    }
+
+    // --- Load stats + pipeline ---
+    async function loadStats() {
+        try {
+            const stats = await get('/test/ods-messages/stats');
+            $('p-ods').textContent = stats.TOTAL || 0;
+            $('p-parsed').textContent = (stats.COMPLETED || 0) + (stats.PROCESSING || 0);
+        } catch(e) { console.error('loadStats', e); }
+    }
+
+    // --- Load aggregations ---
+    async function loadAggregations() {
+        try {
+            const aggs = await get('/test/aggregations');
+            const body = $('aggBody');
+            if (!aggs.length) { body.innerHTML = '<tr><td colspan="7" class="text-muted text-center">No aggregations</td></tr>'; return; }
+            body.innerHTML = aggs.map(a => `<tr>
+                <td>${a.id}</td>
+                <td>${esc(a.statementNumber)}</td>
+                <td>${esc(a.accountNumber)}</td>
+                <td>${esc(a.messageType)}</td>
+                <td>${a.receivedPages}/${a.totalPages}</td>
+                <td>${badge(a.status)}</td>
+                <td>${fmtTime(a.updatedAt)}</td>
+            </tr>`).join('');
+            // pipeline counts
+            $('p-aggregated').textContent = aggs.length;
+            $('p-routed').textContent = aggs.filter(a => a.status === 'COMPLETED').length;
+        } catch(e) { console.error('loadAggregations', e); }
+    }
+
+    // --- Load deliveries ---
+    async function loadDeliveries() {
+        try {
+            const dels = await get('/test/deliveries');
+            const body = $('delBody');
+            $('p-delivered').textContent = dels.length;
+            if (!dels.length) { body.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No deliveries yet</td></tr>'; return; }
+            body.innerHTML = dels.map(d => `<tr>
+                <td><code>${esc(d.destination)}</code></td>
+                <td>${esc(d.messageType)}</td>
+                <td>${esc(d.accountNumber)}</td>
+                <td>${esc(d.transactionReference)}</td>
+                <td>${fmtTime(d.deliveredAt)}</td>
+                <td><span class="msg-preview" role="button" onclick="showRawMsg(this)" title="Click to view">${esc(d.rawMessage?.substring(0,50))}</span>
+                    <span class="d-none">${esc(d.rawMessage)}</span></td>
+            </tr>`).join('');
+        } catch(e) { console.error('loadDeliveries', e); }
+    }
+
+    // --- Load routing rules ---
+    async function loadRules() {
+        try {
+            const rules = await get('/api/routing-rules', true);
+            const body = $('rulesBody');
+            if (!rules.length) { body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No rules</td></tr>'; return; }
+            body.innerHTML = rules.map(r => `<tr>
+                <td>${esc(r.accountNumber)}</td>
+                <td>${esc(r.messageType)}</td>
+                <td><code>${esc(r.destinationQueue)}</code></td>
+                <td>${r.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
+                <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRule(${r.id})"><i class="bi bi-trash3"></i></button></td>
+            </tr>`).join('');
+        } catch(e) { console.error('loadRules', e); }
+    }
+
+    // --- Load relay config ---
+    async function loadRelays() {
+        try {
+            const relays = await get('/api/relay-config', true);
+            const body = $('relayBody');
+            if (!relays.length) { body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No configs</td></tr>'; return; }
+            body.innerHTML = relays.map(r => `<tr>
+                <td>${esc(r.accountNumber)}</td>
+                <td>${esc(r.senderBic)}</td>
+                <td>${esc(r.receiverBic)}</td>
+                <td>${r.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
+                <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRelay(${r.id})"><i class="bi bi-trash3"></i></button></td>
+            </tr>`).join('');
+        } catch(e) { console.error('loadRelays', e); }
+    }
+
+    // --- Load aggregation BIC filters ---
+    async function loadAggFilters() {
+        try {
+            const filters = await get('/api/aggregation-filters', true);
+            const body = $('aggFilterBody');
+            if (!filters.length) { body.innerHTML = '<tr><td colspan="4" class="text-muted text-center">No filters</td></tr>'; return; }
+            body.innerHTML = filters.map(f => `<tr>
+                <td><code>${esc(f.bicValue)}</code></td>
+                <td>${badge(f.filterType)}</td>
+                <td>${f.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
+                <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteAggFilter(${f.id})"><i class="bi bi-trash3"></i></button></td>
+            </tr>`).join('');
+        } catch(e) { console.error('loadAggFilters', e); }
+    }
+
+    // --- Load routing BIC exclusions ---
+    async function loadRouteExcl() {
+        try {
+            const excls = await get('/api/routing-exclusions', true);
+            const body = $('routeExclBody');
+            if (!excls.length) { body.innerHTML = '<tr><td colspan="3" class="text-muted text-center">No exclusions</td></tr>'; return; }
+            body.innerHTML = excls.map(e => `<tr>
+                <td><code>${esc(e.receiverBic)}</code></td>
+                <td>${e.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
+                <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRouteExcl(${e.id})"><i class="bi bi-trash3"></i></button></td>
+            </tr>`).join('');
+        } catch(e) { console.error('loadRouteExcl', e); }
+    }
+
+    // --- Load all ---
+    function loadAll() {
+        loadOds();
+        loadStats();
+        loadAggregations();
+        loadDeliveries();
+        loadRules();
+        loadRelays();
+        loadAggFilters();
+        loadRouteExcl();
+    }
+
+    // --- Submit message ---
+    $('submitBtn').addEventListener('click', async () => {
+        const raw = $('submitMsg').value.trim();
+        if (!raw) return;
+        $('submitBtn').disabled = true;
+        try {
+            const res = await post('/test/ods-messages', { rawMessage: raw });
+            if (res.ok) {
+                $('submitStatus').innerHTML = '<div class="alert alert-success py-1 px-2 mb-0">Message submitted!</div>';
+                setTimeout(() => { $('submitStatus').innerHTML = ''; }, 2000);
+                loadAll();
+            } else {
+                $('submitStatus').innerHTML = '<div class="alert alert-danger py-1 px-2 mb-0">Error submitting</div>';
+            }
+        } catch(e) {
+            $('submitStatus').innerHTML = '<div class="alert alert-danger py-1 px-2 mb-0">Network error</div>';
+        }
+        $('submitBtn').disabled = false;
+    });
+
+    // --- Clear deliveries ---
+    $('clearDeliveries').addEventListener('click', async () => {
+        await del('/test/deliveries');
+        loadAll();
+    });
+
+    // --- Add routing rule ---
+    $('addRuleBtn').addEventListener('click', async () => {
+        const rule = {
+            accountNumber: $('rf-acct').value, messageType: $('rf-type').value,
+            senderBic: $('rf-sbic').value, receiverBic: $('rf-rbic').value,
+            destinationQueue: $('rf-dest').value, active: true
+        };
+        await post('/api/routing-rules', rule, true);
+        $('rf-acct').value = $('rf-type').value = $('rf-sbic').value = $('rf-rbic').value = $('rf-dest').value = '';
+        loadRules();
+    });
+
+    // --- Add relay config ---
+    $('addRelayBtn').addEventListener('click', async () => {
+        const cfg = {
+            accountNumber: $('rl-acct').value, senderBic: $('rl-sbic').value,
+            receiverBic: $('rl-rbic').value, active: true
+        };
+        await post('/api/relay-config', cfg, true);
+        $('rl-acct').value = $('rl-sbic').value = $('rl-rbic').value = '';
+        loadRelays();
+    });
+
+    // --- Add aggregation BIC filter ---
+    $('addAggFilterBtn').addEventListener('click', async () => {
+        const filter = {
+            bicValue: $('af-bic').value, filterType: $('af-type').value, active: true
+        };
+        await post('/api/aggregation-filters', filter, true);
+        $('af-bic').value = '';
+        loadAggFilters();
+    });
+
+    // --- Add routing BIC exclusion ---
+    $('addRouteExclBtn').addEventListener('click', async () => {
+        const excl = { receiverBic: $('re-bic').value, active: true };
+        await post('/api/routing-exclusions', excl, true);
+        $('re-bic').value = '';
+        loadRouteExcl();
+    });
+
+    // --- Delete rule/relay/filter/exclusion (global) ---
+    window.deleteRule = async function(id) {
+        await del('/api/routing-rules/' + id, true);
+        loadRules();
+    };
+    window.deleteRelay = async function(id) {
+        await del('/api/relay-config/' + id, true);
+        loadRelays();
+    };
+    window.deleteAggFilter = async function(id) {
+        await del('/api/aggregation-filters/' + id, true);
+        loadAggFilters();
+    };
+    window.deleteRouteExcl = async function(id) {
+        await del('/api/routing-exclusions/' + id, true);
+        loadRouteExcl();
+    };
+
+    // --- Show raw message modal ---
+    window.showMsg = function(id) {
+        const msg = (window._odsMessages || []).find(m => m.id === id);
+        if (msg) {
+            $('msgModalBody').textContent = msg.rawMessage || '';
+            new bootstrap.Modal($('msgModal')).show();
+        }
+    };
+    window.showRawMsg = function(el) {
+        const raw = el.parentElement.querySelector('.d-none')?.textContent || '';
+        $('msgModalBody').textContent = raw;
+        new bootstrap.Modal($('msgModal')).show();
+    };
+
+    // --- Init ---
+    refreshDot.className = 'refresh-indicator refresh-on';
+    loadAll();
+    startRefresh();
+
+})();
+</script>
+</body>
+</html>

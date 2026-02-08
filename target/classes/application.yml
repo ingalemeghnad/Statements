@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: mt-statement-processor
+
+  datasource:
+    url: jdbc:h2:mem:mtdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    user:
+      name: admin
+      password: admin123
+
+# MT Processing Configuration
+mt:
+  ingestion:
+    mode: POLLING
+    polling:
+      batch-size: 200
+      interval-ms: 5000
+
+  aggregation:
+    expiry-minutes: 60
+    scheduler-interval-ms: 60000
+
+  routing:
+    rules-file-path: classpath:rules/routing-rules.csv
+    exception-queue: EXCEPTION.QUEUE
+
+  delivery:
+    mode: MOCK
+    retry-max-attempts: 3
+
+  thread-pool:
+    ingestion:
+      core-size: 4
+      max-size: 8
+      queue-capacity: 100
+    aggregation:
+      core-size: 2
+      max-size: 4
+      queue-capacity: 50
+    delivery:
+      core-size: 4
+      max-size: 8
+      queue-capacity: 200
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+server:
+  port: 8080

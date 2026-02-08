@@ -1,0 +1,4 @@
+com/bank/mt/MtStatementProcessorApplicationTests.class
+com/bank/mt/EndToEndIntegrationTest.class
+com/bank/mt/parsing/MtParserTest.class
+com/bank/mt/AggregationTimeoutTest.class
