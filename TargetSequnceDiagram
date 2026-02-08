@@ -1,0 +1,76 @@
+sequenceDiagram
+    autonumber
+    participant UI as User UI
+    participant ODSAPI as OdsController test ods messages
+    participant ODSDB as mt_message_ods DB
+    participant POLLER as PollingOdsIngestionStrategy
+    participant PARSER as MtParser
+    participant AGGF as AggregationFilter
+    participant AGGS as AggregationService
+    participant AGGDB as aggregation tables DB
+    participant ROUTER as RoutingService
+    participant CACHE as Routing and Relay Cache
+    participant DELIVERY as DeliveryService async
+    participant ADAPTER as DeliveryAdapter
+    participant DOWN as Downstream Queues
+    participant SWIFT as Swift Relay Queue
+
+    UI->>ODSAPI: Submit raw MT message
+    ODSAPI->>ODSDB: Insert status NEW
+    ODSAPI-->>UI: Created with message id
+
+    loop Poll interval
+        POLLER->>ODSDB: Read NEW batch
+        ODSDB-->>POLLER: messages
+        POLLER->>ODSDB: Mark NEW to PROCESSING
+
+        loop Each message
+            POLLER->>PARSER: Parse raw message
+            PARSER-->>POLLER: MtStatement
+
+            POLLER->>AGGF: shouldAggregate
+
+            alt Skip aggregation
+                AGGF-->>POLLER: false
+                POLLER->>ROUTER: Route statement
+            else Do aggregation
+                AGGF-->>POLLER: true
+                POLLER->>AGGS: aggregate statement
+                AGGS->>AGGDB: find or create group
+                AGGS->>AGGDB: add page and checksum check
+
+                alt Duplicate
+                    AGGS-->>POLLER: rejected
+                    POLLER->>ODSDB: Mark FAILED
+                else Waiting pages
+                    AGGS-->>POLLER: pending
+                else Complete
+                    AGGS-->>POLLER: ready combined statement
+                    POLLER->>ROUTER: Route combined statement
+                end
+            end
+
+            alt Routed path
+                ROUTER->>CACHE: Evaluate rules relay exclusions
+
+                alt Branch excluded
+                    ROUTER-->>POLLER: no destinations
+                else Match found
+                    ROUTER-->>POLLER: destinations and relay flag
+                else No match
+                    ROUTER-->>POLLER: EXCEPTION queue and relay flag
+                end
+
+                POLLER->>DELIVERY: deliver instruction async
+                DELIVERY->>ADAPTER: deliver with retry
+
+                ADAPTER->>DOWN: publish destinations
+                opt Relay enabled
+                    DELIVERY->>ADAPTER: deliver SWIFT RELAY
+                    ADAPTER->>SWIFT: publish relay message
+                end
+            end
+
+            POLLER->>ODSDB: Mark COMPLETED when done
+        end
+    end
