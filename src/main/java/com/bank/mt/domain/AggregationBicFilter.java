@@ -18,6 +18,9 @@ public class AggregationBicFilter {
     @Column(name = "filter_type", nullable = false)
     private AggregationFilterType filterType;
 
+    @Column(name = "message_type")
+    private String messageType;
+
     @Column(name = "active")
     private boolean active;
 
@@ -46,6 +49,9 @@ public class AggregationBicFilter {
 
     public AggregationFilterType getFilterType() { return filterType; }
     public void setFilterType(AggregationFilterType filterType) { this.filterType = filterType; }
+
+    public String getMessageType() { return messageType; }
+    public void setMessageType(String messageType) { this.messageType = messageType; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

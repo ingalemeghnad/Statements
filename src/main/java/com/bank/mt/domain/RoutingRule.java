@@ -26,6 +26,9 @@ public class RoutingRule {
     @Column(name = "destination_queue")
     private String destinationQueue;
 
+    @Column(name = "secondary_destinations", length = 1000)
+    private String secondaryDestinations;
+
     @Column(name = "active")
     private boolean active;
 
@@ -70,6 +73,9 @@ public class RoutingRule {
 
     public String getDestinationQueue() { return destinationQueue; }
     public void setDestinationQueue(String destinationQueue) { this.destinationQueue = destinationQueue; }
+
+    public String getSecondaryDestinations() { return secondaryDestinations; }
+    public void setSecondaryDestinations(String secondaryDestinations) { this.secondaryDestinations = secondaryDestinations; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

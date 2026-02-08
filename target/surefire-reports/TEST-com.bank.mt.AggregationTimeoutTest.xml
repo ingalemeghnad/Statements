@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.bank.mt.AggregationTimeoutTest" time="3.262" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.bank.mt.AggregationTimeoutTest" time="3.25" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -14,7 +14,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="IN"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/megh/Desktop/Statements/target/surefire/surefirebooter-20260208210801428_3.jar /Users/megh/Desktop/Statements/target/surefire 2026-02-08T21-08-01_395-jvmRun1 surefire-20260208210801428_1tmp surefire_0-20260208210801428_2tmp"/>
+    <property name="sun.java.command" value="/Users/megh/Desktop/Statements/target/surefire/surefirebooter-20260209001124342_3.jar /Users/megh/Desktop/Statements/target/surefire 2026-02-09T00-11-24_300-jvmRun1 surefire-20260209001124342_1tmp surefire_0-20260209001124342_2tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/megh/Desktop/Statements/target/test-classes:/Users/megh/Desktop/Statements/target/classes:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.2.2/spring-boot-starter-web-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter/3.2.2/spring-boot-starter-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot/3.2.2/spring-boot-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.2.2/spring-boot-autoconfigure-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.2.2/spring-boot-starter-logging-3.2.2.jar:/Users/megh/.m2/repository/ch/qos/logback/logback-classic/1.4.14/logback-classic-1.4.14.jar:/Users/megh/.m2/repository/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14.jar:/Users/megh/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.21.1/log4j-to-slf4j-2.21.1.jar:/Users/megh/.m2/repository/org/apache/logging/log4j/log4j-api/2.21.1/log4j-api-2.21.1.jar:/Users/megh/.m2/repository/org/slf4j/jul-to-slf4j/2.0.11/jul-to-slf4j-2.0.11.jar:/Users/megh/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/Users/megh/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.2.2/spring-boot-starter-json-3.2.2.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.3/jackson-databind-2.15.3.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.3/jackson-annotations-2.15.3.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.15.3/jackson-datatype-jdk8-2.15.3.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.3/jackson-datatype-jsr310-2.15.3.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.15.3/jackson-module-parameter-names-2.15.3.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.2.2/spring-boot-starter-tomcat-3.2.2.jar:/Users/megh/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar:/Users/megh/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.18/tomcat-embed-websocket-10.1.18.jar:/Users/megh/.m2/repository/org/springframework/spring-web/6.1.3/spring-web-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-beans/6.1.3/spring-beans-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-webmvc/6.1.3/spring-webmvc-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-context/6.1.3/spring-context-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-expression/6.1.3/spring-expression-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.2.2/spring-boot-starter-data-jpa-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.2.2/spring-boot-starter-aop-3.2.2.jar:/Users/megh/.m2/repository/org/aspectj/aspectjweaver/1.9.21/aspectjweaver-1.9.21.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.2.2/spring-boot-starter-jdbc-3.2.2.jar:/Users/megh/.m2/repository/com/zaxxer/HikariCP/5.0.1/HikariCP-5.0.1.jar:/Users/megh/.m2/repository/org/springframework/spring-jdbc/6.1.3/spring-jdbc-6.1.3.jar:/Users/megh/.m2/repository/org/hibernate/orm/hibernate-core/6.4.1.Final/hibernate-core-6.4.1.Final.jar:/Users/megh/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar:/Users/megh/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar:/Users/megh/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar:/Users/megh/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar:/Users/megh/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar:/Users/megh/.m2/repository/com/fasterxml/classmate/1.6.0/classmate-1.6.0.jar:/Users/megh/.m2/repository/net/bytebuddy/byte-buddy/1.14.11/byte-buddy-1.14.11.jar:/Users/megh/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.4/jaxb-runtime-4.0.4.jar:/Users/megh/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.4/jaxb-core-4.0.4.jar:/Users/megh/.m2/repository/org/eclipse/angus/angus-activation/2.0.1/angus-activation-2.0.1.jar:/Users/megh/.m2/repository/org/glassfish/jaxb/txw2/4.0.4/txw2-4.0.4.jar:/Users/megh/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar:/Users/megh/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar:/Users/megh/.m2/repository/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.jar:/Users/megh/.m2/repository/org/springframework/data/spring-data-jpa/3.2.2/spring-data-jpa-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/data/spring-data-commons/3.2.2/spring-data-commons-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/spring-orm/6.1.3/spring-orm-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-tx/6.1.3/spring-tx-6.1.3.jar:/Users/megh/.m2/repository/org/slf4j/slf4j-api/2.0.11/slf4j-api-2.0.11.jar:/Users/megh/.m2/repository/org/springframework/spring-aspects/6.1.3/spring-aspects-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.2.2/spring-boot-starter-actuator-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.2.2/spring-boot-actuator-autoconfigure-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-actuator/3.2.2/spring-boot-actuator-3.2.2.jar:/Users/megh/.m2/repository/io/micrometer/micrometer-observation/1.12.2/micrometer-observation-1.12.2.jar:/Users/megh/.m2/repository/io/micrometer/micrometer-commons/1.12.2/micrometer-commons-1.12.2.jar:/Users/megh/.m2/repository/io/micrometer/micrometer-jakarta9/1.12.2/micrometer-jakarta9-1.12.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-security/3.2.2/spring-boot-starter-security-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/spring-aop/6.1.3/spring-aop-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/security/spring-security-config/6.2.1/spring-security-config-6.2.1.jar:/Users/megh/.m2/repository/org/springframework/security/spring-security-web/6.2.1/spring-security-web-6.2.1.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.2.2/spring-boot-starter-validation-3.2.2.jar:/Users/megh/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.18/tomcat-embed-el-10.1.18.jar:/Users/megh/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar:/Users/megh/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar:/Users/megh/.m2/repository/org/flywaydb/flyway-core/9.22.3/flyway-core-9.22.3.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.15.3/jackson-dataformat-toml-2.15.3.jar:/Users/megh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.3/jackson-core-2.15.3.jar:/Users/megh/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar:/Users/megh/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar:/Users/megh/.m2/repository/io/micrometer/micrometer-registry-prometheus/1.12.2/micrometer-registry-prometheus-1.12.2.jar:/Users/megh/.m2/repository/io/micrometer/micrometer-core/1.12.2/micrometer-core-1.12.2.jar:/Users/megh/.m2/repository/org/hdrhistogram/HdrHistogram/2.1.12/HdrHistogram-2.1.12.jar:/Users/megh/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar:/Users/megh/.m2/repository/io/prometheus/simpleclient_common/0.16.0/simpleclient_common-0.16.0.jar:/Users/megh/.m2/repository/io/prometheus/simpleclient/0.16.0/simpleclient-0.16.0.jar:/Users/megh/.m2/repository/io/prometheus/simpleclient_tracer_otel/0.16.0/simpleclient_tracer_otel-0.16.0.jar:/Users/megh/.m2/repository/io/prometheus/simpleclient_tracer_common/0.16.0/simpleclient_tracer_common-0.16.0.jar:/Users/megh/.m2/repository/io/prometheus/simpleclient_tracer_otel_agent/0.16.0/simpleclient_tracer_otel_agent-0.16.0.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.2.2/spring-boot-starter-test-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-test/3.2.2/spring-boot-test-3.2.2.jar:/Users/megh/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.2.2/spring-boot-test-autoconfigure-3.2.2.jar:/Users/megh/.m2/repository/com/jayway/jsonpath/json-path/2.8.0/json-path-2.8.0.jar:/Users/megh/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.1/jakarta.xml.bind-api-4.0.1.jar:/Users/megh/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.2/jakarta.activation-api-2.1.2.jar:/Users/megh/.m2/repository/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar:/Users/megh/.m2/repository/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar:/Users/megh/.m2/repository/org/ow2/asm/asm/9.3/asm-9.3.jar:/Users/megh/.m2/repository/org/assertj/assertj-core/3.24.2/assertj-core-3.24.2.jar:/Users/megh/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar:/Users/megh/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/Users/megh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.1/junit-jupiter-5.10.1.jar:/Users/megh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar:/Users/megh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/megh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar:/Users/megh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/megh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.1/junit-jupiter-params-5.10.1.jar:/Users/megh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.1/junit-jupiter-engine-5.10.1.jar:/Users/megh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.1/junit-platform-engine-1.10.1.jar:/Users/megh/.m2/repository/org/mockito/mockito-core/5.7.0/mockito-core-5.7.0.jar:/Users/megh/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.11/byte-buddy-agent-1.14.11.jar:/Users/megh/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/Users/megh/.m2/repository/org/mockito/mockito-junit-jupiter/5.7.0/mockito-junit-jupiter-5.7.0.jar:/Users/megh/.m2/repository/org/skyscreamer/jsonassert/1.5.1/jsonassert-1.5.1.jar:/Users/megh/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/Users/megh/.m2/repository/org/springframework/spring-core/6.1.3/spring-core-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-jcl/6.1.3/spring-jcl-6.1.3.jar:/Users/megh/.m2/repository/org/springframework/spring-test/6.1.3/spring-test-6.1.3.jar:/Users/megh/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:/Users/megh/.m2/repository/org/springframework/security/spring-security-test/6.2.1/spring-security-test-6.2.1.jar:/Users/megh/.m2/repository/org/springframework/security/spring-security-core/6.2.1/spring-security-core-6.2.1.jar:/Users/megh/.m2/repository/org/springframework/security/spring-security-crypto/6.2.1/spring-security-crypto-6.2.1.jar:"/>
@@ -32,7 +32,7 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="/Users/megh/Desktop/Statements/target/surefire/surefirebooter-20260208210801428_3.jar"/>
+    <property name="surefire.real.class.path" value="/Users/megh/Desktop/Statements/target/surefire/surefirebooter-20260209001124342_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="17.0.11+7-LTS-207"/>
@@ -50,7 +50,7 @@
     <property name="user.dir" value="/Users/megh/Desktop/Statements"/>
     <property name="os.arch" value="aarch64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="11047"/>
+    <property name="PID" value="14687"/>
     <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
     <property name="native.encoding" value="UTF-8"/>
     <property name="java.library.path" value="/Users/megh/Library/Java/Extensions:/Library/Java/Extensions:/Network/Library/Java/Extensions:/System/Library/Java/Extensions:/usr/lib/java:."/>
@@ -62,9 +62,9 @@
     <property name="java.class.version" value="61.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[mt-statement-processor] "/>
   </properties>
-  <testcase name="expiredAggregation_isRejectedAndOdsMarkedFailed" classname="com.bank.mt.AggregationTimeoutTest" time="0.289">
-    <system-out><![CDATA[21:08:01.752 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bank.mt.AggregationTimeoutTest]: AggregationTimeoutTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:08:01.800 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bank.mt.MtStatementProcessorApplication for test class com.bank.mt.AggregationTimeoutTest
+  <testcase name="expiredAggregation_isRejectedAndOdsMarkedFailed" classname="com.bank.mt.AggregationTimeoutTest" time="0.299">
+    <system-out><![CDATA[00:11:24.691 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.bank.mt.AggregationTimeoutTest]: AggregationTimeoutTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:11:24.735 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.bank.mt.MtStatementProcessorApplication for test class com.bank.mt.AggregationTimeoutTest
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -74,33 +74,34 @@
  =========|_|==============|___/=/_/_/_/
  :: Spring Boot ::                (v3.2.2)
 
-2026-02-08T21:08:01.978+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.bank.mt.AggregationTimeoutTest       : Starting AggregationTimeoutTest using Java 17.0.11 with PID 11047 (started by megh in /Users/megh/Desktop/Statements)
-2026-02-08T21:08:01.979+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.bank.mt.AggregationTimeoutTest       : The following 1 profile is active: "test"
-2026-02-08T21:08:02.349+05:30  INFO 11047 --- [mt-statement-processor] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-02-08T21:08:02.374+05:30  INFO 11047 --- [mt-statement-processor] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 22 ms. Found 7 JPA repository interfaces.
-2026-02-08T21:08:02.649+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-02-08T21:08:02.728+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
-2026-02-08T21:08:02.728+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-02-08T21:08:02.759+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
-2026-02-08T21:08:02.759+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
-2026-02-08T21:08:02.759+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.c.internal.license.VersionPrinter    : 
-2026-02-08T21:08:02.775+05:30  INFO 11047 --- [mt-statement-processor] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:testdb (H2 2.2)
-2026-02-08T21:08:02.779+05:30  WARN 11047 --- [mt-statement-processor] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
-2026-02-08T21:08:02.786+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-2026-02-08T21:08:02.787+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 3 migrations (execution time 00:00.004s)
-2026-02-08T21:08:02.789+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
-2026-02-08T21:08:02.798+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
-2026-02-08T21:08:02.802+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create tables"
-2026-02-08T21:08:02.814+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "2 - sample data"
-2026-02-08T21:08:02.818+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "3 - filter tables"
-2026-02-08T21:08:02.823+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.009s)
-2026-02-08T21:08:02.871+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2026-02-08T21:08:02.899+05:30  INFO 11047 --- [mt-statement-processor] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
-2026-02-08T21:08:02.913+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2026-02-08T21:08:03.003+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-02-08T21:08:03.022+05:30  WARN 11047 --- [mt-statement-processor] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2026-02-08T21:08:03.463+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-02-08T21:08:03.474+05:30  INFO 11047 --- [mt-statement-processor] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-09T00:11:24.912+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.bank.mt.AggregationTimeoutTest       : Starting AggregationTimeoutTest using Java 17.0.11 with PID 14687 (started by megh in /Users/megh/Desktop/Statements)
+2026-02-09T00:11:24.913+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.bank.mt.AggregationTimeoutTest       : The following 1 profile is active: "test"
+2026-02-09T00:11:25.331+05:30  INFO 14687 --- [mt-statement-processor] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-09T00:11:25.357+05:30  INFO 14687 --- [mt-statement-processor] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 22 ms. Found 7 JPA repository interfaces.
+2026-02-09T00:11:25.615+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-09T00:11:25.700+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2026-02-09T00:11:25.701+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-09T00:11:25.733+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-02-09T00:11:25.733+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-02-09T00:11:25.733+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-02-09T00:11:25.750+05:30  INFO 14687 --- [mt-statement-processor] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:testdb (H2 2.2)
+2026-02-09T00:11:25.755+05:30  WARN 14687 --- [mt-statement-processor] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-02-09T00:11:25.763+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-02-09T00:11:25.764+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 4 migrations (execution time 00:00.005s)
+2026-02-09T00:11:25.767+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-02-09T00:11:25.776+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-02-09T00:11:25.781+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create tables"
+2026-02-09T00:11:25.792+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "2 - sample data"
+2026-02-09T00:11:25.796+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "3 - filter tables"
+2026-02-09T00:11:25.800+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "4 - secondary destinations"
+2026-02-09T00:11:25.805+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "PUBLIC", now at version v4 (execution time 00:00.012s)
+2026-02-09T00:11:25.850+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-09T00:11:25.888+05:30  INFO 14687 --- [mt-statement-processor] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
+2026-02-09T00:11:25.902+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-09T00:11:25.993+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-09T00:11:26.012+05:30  WARN 14687 --- [mt-statement-processor] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-02-09T00:11:26.472+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-09T00:11:26.481+05:30  INFO 14687 --- [mt-statement-processor] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
 Hibernate: 
     select
         abf1_0.id,
@@ -127,8 +128,8 @@ Hibernate:
     where
         abf1_0.filter_type=? 
         and abf1_0.active
-2026-02-08T21:08:03.724+05:30  INFO 11047 --- [mt-statement-processor] [           main] c.bank.mt.aggregation.AggregationFilter  : Aggregation filter cache refreshed: allowed BICs=[BANKGB22, CLIENTBI], excluded branches=[]
-2026-02-08T21:08:03.751+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-09T00:11:26.721+05:30  INFO 14687 --- [mt-statement-processor] [           main] c.bank.mt.aggregation.AggregationFilter  : Aggregation filter cache refreshed: allowed BICs=[BANKGB22, CLIENTBI], excluded branches=[]
+2026-02-09T00:11:26.743+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
 Hibernate: 
     select
         rr1_0.id,
@@ -139,6 +140,7 @@ Hibernate:
         rr1_0.destination_queue,
         rr1_0.message_type,
         rr1_0.receiver_bic,
+        rr1_0.secondary_destinations,
         rr1_0.sender_bic,
         rr1_0.source,
         rr1_0.updated_at 
@@ -163,20 +165,20 @@ Hibernate:
     select
         rbe1_0.id,
         rbe1_0.active,
+        rbe1_0.branch_code,
         rbe1_0.created_at,
-        rbe1_0.receiver_bic,
         rbe1_0.updated_at 
     from
         routing_bic_exclusion rbe1_0 
     where
         rbe1_0.active
-2026-02-08T21:08:04.035+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.bank.mt.routing.RoutingService       : Routing cache refreshed: 1 rules, 1 relay configs, 0 excluded BICs
-2026-02-08T21:08:04.080+05:30  WARN 11047 --- [mt-statement-processor] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-02-08T21:08:04.152+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
-2026-02-08T21:08:04.314+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
-2026-02-08T21:08:04.356+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@3b5299a3, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@393d1a05, org.springframework.security.web.context.SecurityContextHolderFilter@4b2be6f8, org.springframework.security.web.header.HeaderWriterFilter@34a91445, org.springframework.web.filter.CorsFilter@7e8c465d, org.springframework.security.web.authentication.logout.LogoutFilter@7d65286a, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@38db8089, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@3842ccf9, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@4e0b9055, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@6d5ef5ee, org.springframework.security.web.access.ExceptionTranslationFilter@1f146411, org.springframework.security.web.access.intercept.AuthorizationFilter@268c4507]
-2026-02-08T21:08:04.593+05:30  INFO 11047 --- [mt-statement-processor] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:testdb'
-2026-02-08T21:08:04.627+05:30  INFO 11047 --- [mt-statement-processor] [           main] com.bank.mt.AggregationTimeoutTest       : Started AggregationTimeoutTest in 2.773 seconds (process running for 3.16)
+2026-02-09T00:11:27.002+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.bank.mt.routing.RoutingService       : Routing cache refreshed: 1 rules, 1 relay configs, 0 excluded branches
+2026-02-09T00:11:27.048+05:30  WARN 14687 --- [mt-statement-processor] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-09T00:11:27.122+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-02-09T00:11:27.270+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-02-09T00:11:27.303+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@60ccf498, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@430ec0d7, org.springframework.security.web.context.SecurityContextHolderFilter@6392ecbc, org.springframework.security.web.header.HeaderWriterFilter@2ae84b49, org.springframework.web.filter.CorsFilter@76e11cc, org.springframework.security.web.authentication.logout.LogoutFilter@20c3be4c, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@5927fc8e, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@18c805b, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@173398da, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@4c96b175, org.springframework.security.web.access.ExceptionTranslationFilter@238bec83, org.springframework.security.web.access.intercept.AuthorizationFilter@78a4914d]
+2026-02-09T00:11:27.509+05:30  INFO 14687 --- [mt-statement-processor] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:testdb'
+2026-02-09T00:11:27.540+05:30  INFO 14687 --- [mt-statement-processor] [           main] com.bank.mt.AggregationTimeoutTest       : Started AggregationTimeoutTest in 2.747 seconds (process running for 3.161)
 Hibernate: 
     select
         mmo1_0.id,
@@ -196,7 +198,7 @@ Hibernate:
         ? rows 
     fetch
         first ? rows only
-2026-02-08T21:08:04.635+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] c.b.m.i.PollingOdsIngestionStrategy      : Picked up 4 messages from ODS
+2026-02-09T00:11:27.548+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] c.b.m.i.PollingOdsIngestionStrategy      : Picked up 4 messages from ODS
 Hibernate: 
     update
         mt_message_ods 
@@ -206,10 +208,10 @@ Hibernate:
     where
         id in (?, ?, ?, ?) 
         and status=?
-2026-02-08T21:08:04.647+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Single-page MT940 ref=REF123 — skipping aggregation
-2026-02-08T21:08:04.647+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : Routing result for ref=REF123: destinations=[REPORTING.Q1], relay=true
-2026-02-08T21:08:04.648+05:30  INFO 11047 --- [mt-statement-processor] [     delivery-1] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=REPORTING.Q1 type=MT940 ref=REF123 acct=123456789
-2026-02-08T21:08:04.648+05:30  INFO 11047 --- [mt-statement-processor] [     delivery-1] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=SWIFT.RELAY type=MT940 ref=REF123 acct=123456789
+2026-02-09T00:11:27.557+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Single-page MT940 ref=REF123 — skipping aggregation
+2026-02-09T00:11:27.558+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : Routing result for ref=REF123: destinations=[REPORTING.Q1], relay=true
+2026-02-09T00:11:27.558+05:30  INFO 14687 --- [mt-statement-processor] [     delivery-1] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=REPORTING.Q1 type=MT940 ref=REF123 acct=123456789
+2026-02-09T00:11:27.559+05:30  INFO 14687 --- [mt-statement-processor] [     delivery-1] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=SWIFT.RELAY type=MT940 ref=REF123 acct=123456789
 Hibernate: 
     select
         ma1_0.id,
@@ -242,15 +244,15 @@ Hibernate:
         (aggregation_id, checksum, created_at, ods_message_id, page_number, raw_message, id) 
     values
         (?, ?, ?, ?, ?, ?, default)
-2026-02-08T21:08:04.675+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Aggregation in progress for stmt=00002 acct=123456789 (1/2 pages)
-2026-02-08T21:08:04.675+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Single-page MT940 ref=REF456 — skipping aggregation
-2026-02-08T21:08:04.675+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : Routing result for ref=REF456: destinations=[REPORTING.Q1], relay=true
-2026-02-08T21:08:04.675+05:30  INFO 11047 --- [mt-statement-processor] [     delivery-2] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=REPORTING.Q1 type=MT940 ref=REF456 acct=123456789
-2026-02-08T21:08:04.676+05:30  INFO 11047 --- [mt-statement-processor] [     delivery-2] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=SWIFT.RELAY type=MT940 ref=REF456 acct=123456789
-2026-02-08T21:08:04.676+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Single-page MT942 ref=REF789 — skipping aggregation
-2026-02-08T21:08:04.676+05:30  WARN 11047 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : No routing rule matched for ref=REF789 acct=987654321 type=MT942 — routing to exception queue [EXCEPTION.QUEUE]
-2026-02-08T21:08:04.676+05:30  INFO 11047 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : Routing result for ref=REF789: destinations=[EXCEPTION.QUEUE], relay=false
-2026-02-08T21:08:04.676+05:30  INFO 11047 --- [mt-statement-processor] [     delivery-3] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=EXCEPTION.QUEUE type=MT942 ref=REF789 acct=987654321
+2026-02-09T00:11:27.578+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Aggregation in progress for stmt=00002 acct=123456789 (1/2 pages)
+2026-02-09T00:11:27.578+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Single-page MT940 ref=REF456 — skipping aggregation
+2026-02-09T00:11:27.578+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : Routing result for ref=REF456: destinations=[REPORTING.Q1], relay=true
+2026-02-09T00:11:27.578+05:30  INFO 14687 --- [mt-statement-processor] [     delivery-2] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=REPORTING.Q1 type=MT940 ref=REF456 acct=123456789
+2026-02-09T00:11:27.579+05:30  INFO 14687 --- [mt-statement-processor] [     delivery-2] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=SWIFT.RELAY type=MT940 ref=REF456 acct=123456789
+2026-02-09T00:11:27.579+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] c.b.mt.aggregation.AggregationService    : Single-page MT942 ref=REF789 — skipping aggregation
+2026-02-09T00:11:27.579+05:30  WARN 14687 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : No routing rule matched for ref=REF789 acct=987654321 type=MT942 — routing to exception queue [EXCEPTION.QUEUE]
+2026-02-09T00:11:27.579+05:30  INFO 14687 --- [mt-statement-processor] [   scheduling-1] com.bank.mt.routing.RoutingService       : Routing result for ref=REF789: destinations=[EXCEPTION.QUEUE], relay=false
+2026-02-09T00:11:27.579+05:30  INFO 14687 --- [mt-statement-processor] [     delivery-3] c.bank.mt.delivery.MockDeliveryAdapter   : MOCK DELIVERY → dest=EXCEPTION.QUEUE type=MT942 ref=REF789 acct=987654321
 Hibernate: 
     update
         mt_message_ods 
@@ -430,7 +432,7 @@ Hibernate:
     where
         ma1_0.status=? 
         and ma1_0.created_at<?
-2026-02-08T21:08:04.932+05:30  INFO 11047 --- [mt-statement-processor] [           main] c.b.m.s.AggregationExpiryScheduler       : Found 1 expired aggregations (cutoff=2026-02-08T20:08:04.931275)
+2026-02-09T00:11:27.855+05:30  INFO 14687 --- [mt-statement-processor] [           main] c.b.m.s.AggregationExpiryScheduler       : Found 1 expired aggregations (cutoff=2026-02-08T23:11:27.854673)
 Hibernate: 
     select
         p1_0.aggregation_id,
@@ -459,7 +461,7 @@ Hibernate:
         mt_message_ods mmo1_0 
     where
         mmo1_0.id=?
-2026-02-08T21:08:04.935+05:30  WARN 11047 --- [mt-statement-processor] [           main] c.b.m.s.AggregationExpiryScheduler       : Rejected aggregation id=2 stmt=TIMEOUT_TEST acct=TIMEOUT_ACCT (1/3 pages received)
+2026-02-09T00:11:27.858+05:30  WARN 14687 --- [mt-statement-processor] [           main] c.b.m.s.AggregationExpiryScheduler       : Rejected aggregation id=2 stmt=TIMEOUT_TEST acct=TIMEOUT_ACCT (1/3 pages received)
 Hibernate: 
     update
         mt_aggregation 

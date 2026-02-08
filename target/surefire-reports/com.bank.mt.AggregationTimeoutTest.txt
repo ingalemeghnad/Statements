@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.bank.mt.AggregationTimeoutTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.262 s -- in com.bank.mt.AggregationTimeoutTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.250 s -- in com.bank.mt.AggregationTimeoutTest

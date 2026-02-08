@@ -39,7 +39,7 @@ public class RoutingService {
 
     private volatile List<RoutingRule> cachedRules = new CopyOnWriteArrayList<>();
     private volatile List<RelayConfig> cachedRelays = new CopyOnWriteArrayList<>();
-    private volatile Set<String> cachedExcludedBics = Set.of();
+    private volatile Set<String> cachedExcludedBranches = Set.of();
 
     public RoutingService(RoutingRuleRepository ruleRepository,
                            RelayConfigRepository relayRepository,
@@ -57,18 +57,18 @@ public class RoutingService {
     public void refreshCache() {
         cachedRules = new CopyOnWriteArrayList<>(ruleRepository.findByActiveTrue());
         cachedRelays = new CopyOnWriteArrayList<>(relayRepository.findByActiveTrue());
-        cachedExcludedBics = exclusionRepository.findByActiveTrue().stream()
-                .map(e -> e.getReceiverBic().toUpperCase())
+        cachedExcludedBranches = exclusionRepository.findByActiveTrue().stream()
+                .map(e -> e.getBranchCode().toUpperCase())
                 .collect(Collectors.toSet());
-        log.info("Routing cache refreshed: {} rules, {} relay configs, {} excluded BICs",
-                cachedRules.size(), cachedRelays.size(), cachedExcludedBics.size());
+        log.info("Routing cache refreshed: {} rules, {} relay configs, {} excluded branches",
+                cachedRules.size(), cachedRelays.size(), cachedExcludedBranches.size());
     }
 
     public DeliveryInstruction route(MtStatement statement) {
-        String receiverBic = statement.getReceiverBic();
-        if (receiverBic != null && cachedExcludedBics.contains(receiverBic.toUpperCase())) {
-            log.info("Routing skipped for ref={}: receiver BIC {} is excluded",
-                    statement.getTransactionReference(), receiverBic);
+        String branch = statement.getReceiverBicBranch();
+        if (branch != null && !branch.isBlank() && cachedExcludedBranches.contains(branch.toUpperCase())) {
+            log.info("Routing skipped for ref={}: branch {} is excluded",
+                    statement.getTransactionReference(), branch);
             skippedCounter.increment();
             return new DeliveryInstruction(List.of(), false, statement);
         }
@@ -88,6 +88,14 @@ public class RoutingService {
         for (RoutingRule rule : cachedRules) {
             if (matches(rule, statement)) {
                 destinations.add(rule.getDestinationQueue());
+                if (rule.getSecondaryDestinations() != null && !rule.getSecondaryDestinations().isBlank()) {
+                    for (String sec : rule.getSecondaryDestinations().split(",")) {
+                        String trimmed = sec.trim();
+                        if (!trimmed.isEmpty()) {
+                            destinations.add(trimmed);
+                        }
+                    }
+                }
                 cacheHitCounter.increment();
             }
         }

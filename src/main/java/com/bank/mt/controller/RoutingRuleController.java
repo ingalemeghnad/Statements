@@ -47,6 +47,7 @@ public class RoutingRuleController {
         existing.setSenderBic(rule.getSenderBic());
         existing.setReceiverBic(rule.getReceiverBic());
         existing.setDestinationQueue(rule.getDestinationQueue());
+        existing.setSecondaryDestinations(rule.getSecondaryDestinations());
         existing.setActive(rule.isActive());
         RoutingRule saved = repository.save(existing);
         routingService.refreshCache();

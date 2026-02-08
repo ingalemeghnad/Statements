@@ -72,12 +72,12 @@
                 <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
                 <div class="pipeline-step">
                     <div class="count" id="p-aggregated">-</div>
-                    <div class="label">Aggregated</div>
+                    <div class="label">Marshalled</div>
                 </div>
                 <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
                 <div class="pipeline-step">
                     <div class="count" id="p-routed">-</div>
-                    <div class="label">Routed</div>
+                    <div class="label">Stmt Routed</div>
                 </div>
                 <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
                 <div class="pipeline-step">
@@ -110,11 +110,11 @@
                 </div>
             </div>
 
-            <!-- Routing Rules -->
+            <!-- Statement Routing Preferences -->
             <div class="card mb-3">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="section-title mb-0"><i class="bi bi-signpost-split me-1"></i>Routing Rules</h6>
+                        <h6 class="section-title mb-0"><i class="bi bi-signpost-split me-1"></i>Statement Routing Preferences</h6>
                         <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#ruleForm">
                             <i class="bi bi-plus"></i>
                         </button>
@@ -130,7 +130,10 @@
                                 <div class="col-6"><input class="form-control form-control-sm" id="rf-rbic" placeholder="Receiver BIC"></div>
                             </div>
                             <div class="row g-1 mb-1">
-                                <div class="col-8"><input class="form-control form-control-sm" id="rf-dest" placeholder="Destination Queue"></div>
+                                <div class="col-12"><input class="form-control form-control-sm" id="rf-dest" placeholder="Primary Destination Queue"></div>
+                            </div>
+                            <div class="row g-1 mb-1">
+                                <div class="col-8"><input class="form-control form-control-sm" id="rf-sec" placeholder="Secondary (comma-separated)"></div>
                                 <div class="col-4">
                                     <button class="btn btn-primary btn-sm w-100" id="addRuleBtn">Add</button>
                                 </div>
@@ -139,7 +142,7 @@
                     </div>
                     <div class="table-responsive" style="max-height:220px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>Acct</th><th>Type</th><th>Dest</th><th>On</th><th></th></tr></thead>
+                            <thead class="table-light"><tr><th>Acct</th><th>Type</th><th>S.BIC</th><th>R.BIC</th><th>Primary</th><th>Secondary</th><th>On</th><th></th></tr></thead>
                             <tbody id="rulesBody"></tbody>
                         </table>
                     </div>
@@ -173,11 +176,11 @@
                     </div>
                 </div>
             </div>
-            <!-- Aggregation BIC Filters -->
+            <!-- Aggregation/Marshalling BIC Filters -->
             <div class="card mb-3">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="section-title mb-0"><i class="bi bi-funnel me-1"></i>Aggregation BIC Filters</h6>
+                        <h6 class="section-title mb-0"><i class="bi bi-funnel me-1"></i>Aggregation/Marshalling BIC Filters</h6>
                         <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#aggFilterForm">
                             <i class="bi bi-plus"></i>
                         </button>
@@ -205,24 +208,24 @@
                 </div>
             </div>
 
-            <!-- Routing BIC Exclusions -->
+            <!-- Statement Routing Branch Exclusions -->
             <div class="card mb-3">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="section-title mb-0"><i class="bi bi-x-octagon me-1"></i>Routing BIC Exclusions</h6>
+                        <h6 class="section-title mb-0"><i class="bi bi-x-octagon me-1"></i>Statement Routing Branch Exclusions</h6>
                         <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#routeExclForm">
                             <i class="bi bi-plus"></i>
                         </button>
                     </div>
                     <div class="collapse mb-2" id="routeExclForm">
                         <div class="border rounded p-2 bg-light">
-                            <input class="form-control form-control-sm mb-1" id="re-bic" placeholder="Receiver BIC">
+                            <input class="form-control form-control-sm mb-1" id="re-bic" placeholder="Branch code (last 3 chars)">
                             <button class="btn btn-primary btn-sm w-100" id="addRouteExclBtn">Add</button>
                         </div>
                     </div>
                     <div class="table-responsive" style="max-height:150px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>Receiver BIC</th><th>On</th><th></th></tr></thead>
+                            <thead class="table-light"><tr><th>Branch Code</th><th>On</th><th></th></tr></thead>
                             <tbody id="routeExclBody"></tbody>
                         </table>
                     </div>
@@ -248,7 +251,7 @@
             <!-- Aggregations -->
             <div class="card mb-3">
                 <div class="card-body">
-                    <h6 class="section-title"><i class="bi bi-layers me-1"></i>Aggregations</h6>
+                    <h6 class="section-title"><i class="bi bi-layers me-1"></i>Aggregation/Marshalling</h6>
                     <div class="table-responsive" style="max-height:220px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
                             <thead class="table-light"><tr><th>ID</th><th>Stmt#</th><th>Account</th><th>Type</th><th>Pages</th><th>Status</th><th>Updated</th></tr></thead>
@@ -440,11 +443,14 @@
         try {
             const rules = await get('/api/routing-rules', true);
             const body = $('rulesBody');
-            if (!rules.length) { body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No rules</td></tr>'; return; }
+            if (!rules.length) { body.innerHTML = '<tr><td colspan="8" class="text-muted text-center">No rules</td></tr>'; return; }
             body.innerHTML = rules.map(r => `<tr>
-                <td>${esc(r.accountNumber)}</td>
-                <td>${esc(r.messageType)}</td>
+                <td>${esc(r.accountNumber) || '*'}</td>
+                <td>${esc(r.messageType) || '*'}</td>
+                <td>${esc(r.senderBic) || '*'}</td>
+                <td>${esc(r.receiverBic) || '*'}</td>
                 <td><code>${esc(r.destinationQueue)}</code></td>
+                <td>${r.secondaryDestinations ? '<code>' + esc(r.secondaryDestinations) + '</code>' : '-'}</td>
                 <td>${r.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
                 <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRule(${r.id})"><i class="bi bi-trash3"></i></button></td>
             </tr>`).join('');
@@ -489,7 +495,7 @@
             const body = $('routeExclBody');
             if (!excls.length) { body.innerHTML = '<tr><td colspan="3" class="text-muted text-center">No exclusions</td></tr>'; return; }
             body.innerHTML = excls.map(e => `<tr>
-                <td><code>${esc(e.receiverBic)}</code></td>
+                <td><code>${esc(e.branchCode)}</code></td>
                 <td>${e.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
                 <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRouteExcl(${e.id})"><i class="bi bi-trash3"></i></button></td>
             </tr>`).join('');
@@ -539,10 +545,12 @@
         const rule = {
             accountNumber: $('rf-acct').value, messageType: $('rf-type').value,
             senderBic: $('rf-sbic').value, receiverBic: $('rf-rbic').value,
-            destinationQueue: $('rf-dest').value, active: true
+            destinationQueue: $('rf-dest').value,
+            secondaryDestinations: $('rf-sec').value || null,
+            active: true
         };
         await post('/api/routing-rules', rule, true);
-        $('rf-acct').value = $('rf-type').value = $('rf-sbic').value = $('rf-rbic').value = $('rf-dest').value = '';
+        $('rf-acct').value = $('rf-type').value = $('rf-sbic').value = $('rf-rbic').value = $('rf-dest').value = $('rf-sec').value = '';
         loadRules();
     });
 
@@ -569,7 +577,7 @@
 
     // --- Add routing BIC exclusion ---
     $('addRouteExclBtn').addEventListener('click', async () => {
-        const excl = { receiverBic: $('re-bic').value, active: true };
+        const excl = { branchCode: $('re-bic').value, active: true };
         await post('/api/routing-exclusions', excl, true);
         $('re-bic').value = '';
         loadRouteExcl();
