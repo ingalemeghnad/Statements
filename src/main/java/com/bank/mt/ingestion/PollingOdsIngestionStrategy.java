@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Component
 @ConditionalOnProperty(name = "mt.ingestion.mode", havingValue = "POLLING", matchIfMissing = true)
@@ -88,8 +89,11 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
                 // Skip aggregation — route individual page directly
                 log.info("Aggregation skipped for ref={} receiverBic={} — routing directly",
                         statement.getTransactionReference(), statement.getReceiverBic());
-                routeAndDeliver(statement);
-                markCompleted(ods);
+                if (routeAndDeliver(statement)) {
+                    markCompleted(ods);
+                } else {
+                    markFailed(ods, "Delivery failed after retries");
+                }
                 processedCounter.increment();
                 return;
             }
@@ -102,8 +106,17 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
             }
 
             if (result.isReadyForRouting()) {
-                routeAndDeliver(result.getCombinedStatement());
-                markCompleted(ods);
+                List<Long> relatedOdsIds = Stream.concat(
+                                result.getRelatedOdsMessageIds().stream(),
+                                Stream.of(ods.getId()))
+                        .distinct()
+                        .toList();
+
+                if (routeAndDeliver(result.getCombinedStatement())) {
+                    markCompletedByIds(relatedOdsIds);
+                } else {
+                    markFailedByIds(relatedOdsIds, "Delivery failed after retries");
+                }
             }
             // else: still waiting for more pages — leave as PROCESSING
 
@@ -114,9 +127,9 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
         }
     }
 
-    private void routeAndDeliver(MtStatement statement) {
+    private boolean routeAndDeliver(MtStatement statement) {
         DeliveryInstruction instruction = routingService.route(statement);
-        deliveryService.deliver(instruction);
+        return deliveryService.deliver(instruction);
     }
 
     private void markCompleted(MtMessageOds ods) {
@@ -124,10 +137,22 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
         odsRepository.save(ods);
     }
 
+    private void markCompletedByIds(List<Long> odsIds) {
+        for (Long odsId : odsIds) {
+            odsRepository.findById(odsId).ifPresent(this::markCompleted);
+        }
+    }
+
     private void markFailed(MtMessageOds ods, String reason) {
         ods.setStatus(OdsStatus.FAILED);
         ods.setErrorReason(reason);
         ods.setRetryCount(ods.getRetryCount() + 1);
         odsRepository.save(ods);
+    }
+
+    private void markFailedByIds(List<Long> odsIds, String reason) {
+        for (Long odsId : odsIds) {
+            odsRepository.findById(odsId).ifPresent(ods -> markFailed(ods, reason));
+        }
     }
 }

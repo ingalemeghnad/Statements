@@ -14,8 +14,8 @@ import java.util.Optional;
 @Repository
 public interface MtAggregationRepository extends JpaRepository<MtAggregation, Long> {
 
-    Optional<MtAggregation> findByStatementNumberAndAccountNumberAndMessageType(
-            String statementNumber, String accountNumber, String messageType);
+    Optional<MtAggregation> findByStatementNumberAndAccountNumberAndMessageTypeAndTransactionReference(
+            String statementNumber, String accountNumber, String messageType, String transactionReference);
 
     @Query("SELECT a FROM MtAggregation a WHERE a.status = :status AND a.createdAt < :cutoff")
     List<MtAggregation> findExpiredAggregations(@Param("status") AggregationStatus status,

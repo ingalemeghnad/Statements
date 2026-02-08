@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -48,17 +49,19 @@ public class AggregationService {
             log.info("Single-page {} ref={} — skipping aggregation",
                     statement.getMessageType(), statement.getTransactionReference());
             completedCounter.increment();
-            return AggregationResult.ready(statement);
+            return AggregationResult.ready(statement, List.of(odsMessageId));
         }
 
         String checksum = computeChecksum(statement.getRawMessage());
+        String transactionReference = normalizeReference(statement.getTransactionReference());
 
         // Find or create aggregation group
         Optional<MtAggregation> existing = aggregationRepo
-                .findByStatementNumberAndAccountNumberAndMessageType(
+                .findByStatementNumberAndAccountNumberAndMessageTypeAndTransactionReference(
                         statement.getStatementNumber(),
                         statement.getAccountNumber(),
-                        statement.getMessageType());
+                        statement.getMessageType(),
+                        transactionReference);
 
         MtAggregation agg;
         if (existing.isPresent()) {
@@ -81,6 +84,7 @@ public class AggregationService {
             agg.setStatementNumber(statement.getStatementNumber());
             agg.setAccountNumber(statement.getAccountNumber());
             agg.setMessageType(statement.getMessageType());
+            agg.setTransactionReference(transactionReference);
             agg.setStatus(AggregationStatus.IN_PROGRESS);
             // Total pages: use from statement if known, otherwise estimate from page number
             int totalPages = statement.getTotalPages() > 0 ? statement.getTotalPages() : 0;
@@ -112,7 +116,12 @@ public class AggregationService {
             log.info("Aggregation complete for stmt={} acct={} ({} pages)",
                     agg.getStatementNumber(), agg.getAccountNumber(), agg.getTotalPages());
             completedCounter.increment();
-            return AggregationResult.ready(combined);
+            List<Long> relatedOdsIds = agg.getPages().stream()
+                    .map(MtAggregationPage::getOdsMessageId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .toList();
+            return AggregationResult.ready(combined, relatedOdsIds);
         }
 
         aggregationRepo.save(agg);
@@ -120,6 +129,10 @@ public class AggregationService {
                 agg.getStatementNumber(), agg.getAccountNumber(),
                 agg.getReceivedPages(), agg.getTotalPages());
         return AggregationResult.pending();
+    }
+
+    private String normalizeReference(String reference) {
+        return reference == null ? "" : reference.trim();
     }
 
     private MtStatement buildCombinedStatement(MtAggregation agg, MtStatement lastPage) {

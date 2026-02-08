@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * Evaluates routing rules and relay configuration independently.
@@ -39,7 +37,7 @@ public class RoutingService {
 
     private volatile List<RoutingRule> cachedRules = new CopyOnWriteArrayList<>();
     private volatile List<RelayConfig> cachedRelays = new CopyOnWriteArrayList<>();
-    private volatile Set<String> cachedExcludedBranches = Set.of();
+    private volatile List<RoutingBicExclusion> cachedExclusions = new CopyOnWriteArrayList<>();
 
     public RoutingService(RoutingRuleRepository ruleRepository,
                            RelayConfigRepository relayRepository,
@@ -57,16 +55,14 @@ public class RoutingService {
     public void refreshCache() {
         cachedRules = new CopyOnWriteArrayList<>(ruleRepository.findByActiveTrue());
         cachedRelays = new CopyOnWriteArrayList<>(relayRepository.findByActiveTrue());
-        cachedExcludedBranches = exclusionRepository.findByActiveTrue().stream()
-                .map(e -> e.getBranchCode().toUpperCase())
-                .collect(Collectors.toSet());
+        cachedExclusions = new CopyOnWriteArrayList<>(exclusionRepository.findByActiveTrue());
         log.info("Routing cache refreshed: {} rules, {} relay configs, {} excluded branches",
-                cachedRules.size(), cachedRelays.size(), cachedExcludedBranches.size());
+                cachedRules.size(), cachedRelays.size(), cachedExclusions.size());
     }
 
     public DeliveryInstruction route(MtStatement statement) {
         String branch = statement.getReceiverBicBranch();
-        if (branch != null && !branch.isBlank() && cachedExcludedBranches.contains(branch.toUpperCase())) {
+        if (branch != null && !branch.isBlank() && isBranchExcluded(branch, statement.getMessageType())) {
             log.info("Routing skipped for ref={}: branch {} is excluded",
                     statement.getTransactionReference(), branch);
             skippedCounter.increment();
@@ -136,5 +132,23 @@ public class RoutingService {
             }
         }
         return false;
+    }
+
+    private boolean isBranchExcluded(String branchCode, String messageType) {
+        for (RoutingBicExclusion exclusion : cachedExclusions) {
+            if (exclusion.getBranchCode() != null
+                    && exclusion.getBranchCode().equalsIgnoreCase(branchCode)
+                    && matchesType(exclusion.getMessageType(), messageType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean matchesType(String configuredType, String actualType) {
+        if (configuredType == null || configuredType.isBlank() || "*".equals(configuredType)) {
+            return true;
+        }
+        return configuredType.equalsIgnoreCase(actualType);
     }
 }

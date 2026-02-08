@@ -23,6 +23,7 @@ class EndToEndIntegrationTest {
     @Autowired private MtMessageOdsRepository odsRepo;
     @Autowired private RoutingRuleRepository ruleRepo;
     @Autowired private RelayConfigRepository relayRepo;
+    @Autowired private RoutingBicExclusionRepository exclusionRepo;
     @Autowired private PollingOdsIngestionStrategy ingestion;
     @Autowired private MockDeliveryAdapter mockAdapter;
     @Autowired private RoutingService routingService;
@@ -118,6 +119,13 @@ class EndToEndIntegrationTest {
         boolean hasReporting = deliveries.stream()
                 .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination()));
         assertTrue(hasReporting, "Expected delivery to REPORTING.Q1 for multi-page MT940");
+
+        MtMessageOds persistedPage1 = odsRepo.findById(page1.getId()).orElseThrow();
+        MtMessageOds persistedPage2 = odsRepo.findById(page2.getId()).orElseThrow();
+        assertEquals(OdsStatus.COMPLETED, persistedPage1.getStatus(),
+                "All aggregated pages should be marked COMPLETED");
+        assertEquals(OdsStatus.COMPLETED, persistedPage2.getStatus(),
+                "All aggregated pages should be marked COMPLETED");
     }
 
     @Test
@@ -215,5 +223,63 @@ class EndToEndIntegrationTest {
         boolean fileRulesExist = ruleRepo.findAll().stream()
                 .anyMatch(r -> r.getSource() == RuleSource.FILE);
         assertTrue(fileRulesExist, "FILE rules should be loaded");
+    }
+
+    @Test
+    @Order(6)
+    void routingExclusion_appliesByMessageTypeOrWildcard() {
+        RoutingBicExclusion exclusion = new RoutingBicExclusion();
+        exclusion.setBranchCode("LON");
+        exclusion.setMessageType("MT942");
+        exclusion.setActive(true);
+        exclusionRepo.save(exclusion);
+
+        RoutingRule mt940Rule = new RoutingRule();
+        mt940Rule.setAccountNumber("TYPETEST");
+        mt940Rule.setMessageType("MT940");
+        mt940Rule.setSenderBic("BANKGB22");
+        mt940Rule.setReceiverBic("CLIENTBI");
+        mt940Rule.setDestinationQueue("TYPE940.Q1");
+        mt940Rule.setActive(true);
+        mt940Rule.setSource(RuleSource.UI);
+        ruleRepo.save(mt940Rule);
+
+        RoutingRule mt942Rule = new RoutingRule();
+        mt942Rule.setAccountNumber("TYPETEST");
+        mt942Rule.setMessageType("MT942");
+        mt942Rule.setSenderBic("BANKGB22");
+        mt942Rule.setReceiverBic("CLIENTBI");
+        mt942Rule.setDestinationQueue("TYPE942.Q1");
+        mt942Rule.setActive(true);
+        mt942Rule.setSource(RuleSource.UI);
+        ruleRepo.save(mt942Rule);
+
+        routingService.refreshCache();
+
+        MtStatement mt940 = new MtStatement();
+        mt940.setTransactionReference("TYPE-940");
+        mt940.setAccountNumber("TYPETEST");
+        mt940.setMessageType("MT940");
+        mt940.setSenderBic("BANKGB22");
+        mt940.setReceiverBic("CLIENTBI");
+        mt940.setReceiverBicBranch("LON");
+
+        DeliveryInstruction mt940Instruction = routingService.route(mt940);
+        assertFalse(mt940Instruction.getDownstreamDestinations().isEmpty(),
+                "MT940 should not be skipped by MT942-only exclusion");
+
+        MtStatement mt942 = new MtStatement();
+        mt942.setTransactionReference("TYPE-942");
+        mt942.setAccountNumber("TYPETEST");
+        mt942.setMessageType("MT942");
+        mt942.setSenderBic("BANKGB22");
+        mt942.setReceiverBic("CLIENTBI");
+        mt942.setReceiverBicBranch("LON");
+
+        DeliveryInstruction mt942Instruction = routingService.route(mt942);
+        assertTrue(mt942Instruction.getDownstreamDestinations().isEmpty(),
+                "MT942 should be skipped by MT942 branch exclusion");
+        assertFalse(mt942Instruction.isRelayToSwift(),
+                "Skipped routing should not trigger relay");
     }
 }

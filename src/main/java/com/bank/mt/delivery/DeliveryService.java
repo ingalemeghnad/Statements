@@ -6,12 +6,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
  * Orchestrates delivery to downstream destinations and SWIFT relay.
- * Async execution with retry support.
+ * Executes delivery with retry support and returns final success/failure.
  */
 @Service
 public class DeliveryService {
@@ -32,25 +31,28 @@ public class DeliveryService {
         this.failureCounter = meterRegistry.counter("mt.delivery.failure");
     }
 
-    @Async("deliveryExecutor")
-    public void deliver(DeliveryInstruction instruction) {
+    public boolean deliver(DeliveryInstruction instruction) {
+        boolean allDelivered = true;
+
         // Deliver to each downstream destination
         for (String destination : instruction.getDownstreamDestinations()) {
-            deliverWithRetry(destination, instruction);
+            allDelivered = deliverWithRetry(destination, instruction) && allDelivered;
         }
 
         // Relay to SWIFT if configured
         if (instruction.isRelayToSwift()) {
-            deliverWithRetry(SWIFT_RELAY_DESTINATION, instruction);
+            allDelivered = deliverWithRetry(SWIFT_RELAY_DESTINATION, instruction) && allDelivered;
         }
+
+        return allDelivered;
     }
 
-    private void deliverWithRetry(String destination, DeliveryInstruction instruction) {
+    private boolean deliverWithRetry(String destination, DeliveryInstruction instruction) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 adapter.deliver(destination, instruction.getStatement());
                 successCounter.increment();
-                return;
+                return true;
             } catch (Exception e) {
                 log.warn("Delivery attempt {}/{} failed for dest={} ref={}: {}",
                         attempt, maxRetries, destination,
@@ -63,5 +65,7 @@ public class DeliveryService {
                 }
             }
         }
+
+        return false;
     }
 }

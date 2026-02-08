@@ -196,12 +196,15 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="row g-1 mb-1">
+                                <div class="col-12"><input class="form-control form-control-sm" id="af-msgType" placeholder="Message type (blank or * = all, e.g. MT940)"></div>
+                            </div>
                             <button class="btn btn-primary btn-sm w-100 mt-1" id="addAggFilterBtn">Add</button>
                         </div>
                     </div>
                     <div class="table-responsive" style="max-height:180px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>Value</th><th>Type</th><th>On</th><th></th></tr></thead>
+                            <thead class="table-light"><tr><th>Value</th><th>Type</th><th>Msg Type</th><th>On</th><th></th></tr></thead>
                             <tbody id="aggFilterBody"></tbody>
                         </table>
                     </div>
@@ -220,12 +223,13 @@
                     <div class="collapse mb-2" id="routeExclForm">
                         <div class="border rounded p-2 bg-light">
                             <input class="form-control form-control-sm mb-1" id="re-bic" placeholder="Branch code (last 3 chars)">
+                            <input class="form-control form-control-sm mb-1" id="re-msgType" placeholder="Message type (blank or * = all, e.g. MT940)">
                             <button class="btn btn-primary btn-sm w-100" id="addRouteExclBtn">Add</button>
                         </div>
                     </div>
                     <div class="table-responsive" style="max-height:150px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>Branch Code</th><th>On</th><th></th></tr></thead>
+                            <thead class="table-light"><tr><th>Branch Code</th><th>Msg Type</th><th>On</th><th></th></tr></thead>
                             <tbody id="routeExclBody"></tbody>
                         </table>
                     </div>
@@ -478,10 +482,11 @@
         try {
             const filters = await get('/api/aggregation-filters', true);
             const body = $('aggFilterBody');
-            if (!filters.length) { body.innerHTML = '<tr><td colspan="4" class="text-muted text-center">No filters</td></tr>'; return; }
+            if (!filters.length) { body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No filters</td></tr>'; return; }
             body.innerHTML = filters.map(f => `<tr>
                 <td><code>${esc(f.bicValue)}</code></td>
                 <td>${badge(f.filterType)}</td>
+                <td>${esc(f.messageType) || '*'}</td>
                 <td>${f.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
                 <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteAggFilter(${f.id})"><i class="bi bi-trash3"></i></button></td>
             </tr>`).join('');
@@ -493,9 +498,10 @@
         try {
             const excls = await get('/api/routing-exclusions', true);
             const body = $('routeExclBody');
-            if (!excls.length) { body.innerHTML = '<tr><td colspan="3" class="text-muted text-center">No exclusions</td></tr>'; return; }
+            if (!excls.length) { body.innerHTML = '<tr><td colspan="4" class="text-muted text-center">No exclusions</td></tr>'; return; }
             body.innerHTML = excls.map(e => `<tr>
                 <td><code>${esc(e.branchCode)}</code></td>
+                <td>${esc(e.messageType) || '*'}</td>
                 <td>${e.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
                 <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRouteExcl(${e.id})"><i class="bi bi-trash3"></i></button></td>
             </tr>`).join('');
@@ -568,18 +574,27 @@
     // --- Add aggregation BIC filter ---
     $('addAggFilterBtn').addEventListener('click', async () => {
         const filter = {
-            bicValue: $('af-bic').value, filterType: $('af-type').value, active: true
+            bicValue: $('af-bic').value,
+            filterType: $('af-type').value,
+            messageType: $('af-msgType').value || null,
+            active: true
         };
         await post('/api/aggregation-filters', filter, true);
         $('af-bic').value = '';
+        $('af-msgType').value = '';
         loadAggFilters();
     });
 
     // --- Add routing BIC exclusion ---
     $('addRouteExclBtn').addEventListener('click', async () => {
-        const excl = { branchCode: $('re-bic').value, active: true };
+        const excl = {
+            branchCode: $('re-bic').value,
+            messageType: $('re-msgType').value || null,
+            active: true
+        };
         await post('/api/routing-exclusions', excl, true);
         $('re-bic').value = '';
+        $('re-msgType').value = '';
         loadRouteExcl();
     });
 

@@ -22,6 +22,9 @@ public class MtAggregation {
     @Column(name = "message_type")
     private String messageType;
 
+    @Column(name = "transaction_reference", nullable = false)
+    private String transactionReference;
+
     @Column(name = "total_pages")
     private int totalPages;
 
@@ -48,6 +51,9 @@ public class MtAggregation {
 
     @PrePersist
     protected void onCreate() {
+        if (transactionReference == null) {
+            transactionReference = "";
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
@@ -68,6 +74,9 @@ public class MtAggregation {
 
     public String getMessageType() { return messageType; }
     public void setMessageType(String messageType) { this.messageType = messageType; }
+
+    public String getTransactionReference() { return transactionReference; }
+    public void setTransactionReference(String transactionReference) { this.transactionReference = transactionReference; }
 
     public int getTotalPages() { return totalPages; }
     public void setTotalPages(int totalPages) { this.totalPages = totalPages; }
