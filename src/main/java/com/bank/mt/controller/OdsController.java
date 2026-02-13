@@ -3,6 +3,7 @@ package com.bank.mt.controller;
 import com.bank.mt.domain.MtAggregation;
 import com.bank.mt.domain.MtMessageOds;
 import com.bank.mt.domain.OdsStatus;
+import com.bank.mt.ingestion.MqIngestionStrategy;
 import com.bank.mt.repository.MtAggregationRepository;
 import com.bank.mt.repository.MtMessageOdsRepository;
 import org.springframework.data.domain.Sort;
@@ -20,11 +21,14 @@ public class OdsController {
 
     private final MtMessageOdsRepository odsRepository;
     private final MtAggregationRepository aggregationRepository;
+    private final MqIngestionStrategy mqIngestion;
 
     public OdsController(MtMessageOdsRepository odsRepository,
-                         MtAggregationRepository aggregationRepository) {
+                         MtAggregationRepository aggregationRepository,
+                         MqIngestionStrategy mqIngestion) {
         this.odsRepository = odsRepository;
         this.aggregationRepository = aggregationRepository;
+        this.mqIngestion = mqIngestion;
     }
 
     @GetMapping("/ods-messages")
@@ -32,13 +36,16 @@ public class OdsController {
         return odsRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
 
+    /**
+     * Simulates receiving a message from MQ inbound queue.
+     * In production, the @JmsListener in MqIngestionStrategy handles this automatically.
+     */
     @PostMapping("/ods-messages")
-    public ResponseEntity<MtMessageOds> submitOdsMessage(@RequestBody Map<String, String> body) {
-        MtMessageOds msg = new MtMessageOds();
-        msg.setRawMessage(body.get("rawMessage"));
-        msg.setStatus(OdsStatus.NEW);
-        MtMessageOds saved = odsRepository.save(msg);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    public ResponseEntity<Map<String, String>> submitOdsMessage(@RequestBody Map<String, String> body) {
+        String rawMessage = body.get("rawMessage");
+        mqIngestion.onMessage(rawMessage);
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(Map.of("status", "processed", "queue", "MT.INBOUND"));
     }
 
     @GetMapping("/ods-messages/stats")

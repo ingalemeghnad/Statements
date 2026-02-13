@@ -15,10 +15,9 @@ spring:
 
 mt:
   ingestion:
-    mode: POLLING
-    polling:
-      batch-size: 50
-      interval-ms: 999999999
+    mode: MQ
+    mq:
+      inbound-queue: MT.INBOUND.TEST
 
   aggregation:
     expiry-minutes: 60

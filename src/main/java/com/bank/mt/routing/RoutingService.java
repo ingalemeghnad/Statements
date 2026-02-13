@@ -2,14 +2,12 @@ package com.bank.mt.routing;
 
 import com.bank.mt.domain.*;
 import com.bank.mt.repository.RelayConfigRepository;
-import com.bank.mt.repository.RoutingBicExclusionRepository;
 import com.bank.mt.repository.RoutingRuleRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,48 +25,28 @@ public class RoutingService {
 
     private final RoutingRuleRepository ruleRepository;
     private final RelayConfigRepository relayRepository;
-    private final RoutingBicExclusionRepository exclusionRepository;
     private final Counter cacheHitCounter;
-    private final Counter exceptionQueueCounter;
-    private final Counter skippedCounter;
-
-    @Value("${mt.routing.exception-queue:EXCEPTION.QUEUE}")
-    private String exceptionQueue;
 
     private volatile List<RoutingRule> cachedRules = new CopyOnWriteArrayList<>();
     private volatile List<RelayConfig> cachedRelays = new CopyOnWriteArrayList<>();
-    private volatile List<RoutingBicExclusion> cachedExclusions = new CopyOnWriteArrayList<>();
 
     public RoutingService(RoutingRuleRepository ruleRepository,
                            RelayConfigRepository relayRepository,
-                           RoutingBicExclusionRepository exclusionRepository,
                            MeterRegistry meterRegistry) {
         this.ruleRepository = ruleRepository;
         this.relayRepository = relayRepository;
-        this.exclusionRepository = exclusionRepository;
         this.cacheHitCounter = meterRegistry.counter("mt.routing.cache.hit");
-        this.exceptionQueueCounter = meterRegistry.counter("mt.routing.exception.queue");
-        this.skippedCounter = meterRegistry.counter("mt.routing.skipped");
     }
 
     @PostConstruct
     public void refreshCache() {
         cachedRules = new CopyOnWriteArrayList<>(ruleRepository.findByActiveTrue());
         cachedRelays = new CopyOnWriteArrayList<>(relayRepository.findByActiveTrue());
-        cachedExclusions = new CopyOnWriteArrayList<>(exclusionRepository.findByActiveTrue());
-        log.info("Routing cache refreshed: {} rules, {} relay configs, {} excluded branches",
-                cachedRules.size(), cachedRelays.size(), cachedExclusions.size());
+        log.info("Routing cache refreshed: {} rules, {} relay configs",
+                cachedRules.size(), cachedRelays.size());
     }
 
     public DeliveryInstruction route(MtStatement statement) {
-        String branch = statement.getReceiverBicBranch();
-        if (branch != null && !branch.isBlank() && isBranchExcluded(branch, statement.getMessageType())) {
-            log.info("Routing skipped for ref={}: branch {} is excluded",
-                    statement.getTransactionReference(), branch);
-            skippedCounter.increment();
-            return new DeliveryInstruction(List.of(), false, statement);
-        }
-
         List<String> destinations = evaluateRoutingRules(statement);
         boolean relay = evaluateRelayConfig(statement);
 
@@ -97,13 +75,10 @@ public class RoutingService {
         }
 
         if (destinations.isEmpty()) {
-            log.warn("No routing rule matched for ref={} acct={} type={} — routing to exception queue [{}]",
+            log.warn("No routing rule matched for ref={} acct={} type={}",
                     statement.getTransactionReference(),
                     statement.getAccountNumber(),
-                    statement.getMessageType(),
-                    exceptionQueue);
-            destinations.add(exceptionQueue);
-            exceptionQueueCounter.increment();
+                    statement.getMessageType());
         }
 
         return destinations;
@@ -132,23 +107,5 @@ public class RoutingService {
             }
         }
         return false;
-    }
-
-    private boolean isBranchExcluded(String branchCode, String messageType) {
-        for (RoutingBicExclusion exclusion : cachedExclusions) {
-            if (exclusion.getBranchCode() != null
-                    && exclusion.getBranchCode().equalsIgnoreCase(branchCode)
-                    && matchesType(exclusion.getMessageType(), messageType)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean matchesType(String configuredType, String actualType) {
-        if (configuredType == null || configuredType.isBlank() || "*".equals(configuredType)) {
-            return true;
-        }
-        return configuredType.equalsIgnoreCase(actualType);
     }
 }

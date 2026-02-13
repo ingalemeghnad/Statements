@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MT Statement Processor - Sample Messages</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f6f9; font-size: 0.9rem; }
+        .nav-brand { font-weight: 700; letter-spacing: -0.5px; }
+        .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sample-msg { font-family: monospace; font-size: 0.78rem; background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 14px; white-space: pre-wrap; word-break: break-all; }
+        .scenario-tag { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+        .scenario-desc { font-size: 0.82rem; color: #495057; }
+        .expects { font-size: 0.78rem; color: #6c757d; }
+        .expects code { font-size: 0.76rem; background: #e9ecef; padding: 1px 5px; border-radius: 3px; color: #0d6efd; }
+        .step-badge { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: #0d6efd; color: #fff; font-size: 0.72rem; font-weight: 700; text-align: center; line-height: 22px; margin-right: 6px; }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-3">
+    <div class="container-fluid">
+        <span class="navbar-brand nav-brand"><i class="bi bi-bank2 me-2"></i>MT Statement Processor</span>
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-sm btn-outline-light"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
+            <a href="/samples.html" class="btn btn-sm btn-light"><i class="bi bi-file-earmark-code me-1"></i>Samples</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="mb-1">Sample Messages</h5>
+            <p class="text-muted mb-0" style="font-size:0.82rem;">Click <strong>Submit</strong> on any sample to send it through the MQ pipeline. Use the <a href="/">Dashboard</a> to observe results.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" id="runAllBtn"><i class="bi bi-play-circle me-1"></i>Submit All Scenarios</button>
+            <button class="btn btn-outline-primary btn-sm" id="runMultiPageBtn"><i class="bi bi-layers me-1"></i>Run Multi-Page Sequence</button>
+        </div>
+    </div>
+
+    <div class="row g-3" id="samples"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container">
+    <div class="toast align-items-center text-bg-success border-0" id="successToast" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMsg">Submitted!</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    const SAMPLES = [
+        {
+            id: 'single-mt940',
+            title: 'Single-Page MT940',
+            tag: 'MT940',
+            tagColor: 'primary',
+            desc: 'End-of-day account statement (HSBC UK → Citi US). Routes directly without aggregation. No relay configured for this BIC pair.',
+            expects: [
+                'Routed to <code>REPORTING.Q1</code> (routing rule match: HSBCGB2L / CITIUS33)',
+                'No SWIFT relay (relay config is for DEUTDEFF / BNPAFRPP only)',
+                'Status: <code>COMPLETED</code>'
+            ],
+            msg: `{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
+:20:SINGLEREF01
+:25:123456789
+:28C:00001/001
+:60F:C210301EUR2000,
+:61:2103010301DR150,NTRFREF010//ACCT-OWNER
+:62F:C210301EUR1850,
+-}`
+        },
+        {
+            id: 'multi-mt940-p1',
+            title: 'Multi-Page MT940 — Page 1 of 2',
+            tag: 'MT940 MULTI',
+            tagColor: 'info',
+            desc: 'First page of a 2-page statement (HSBC UK → Citi US). Has opening balance (:60F:) and intermediate closing (:62M:). Will enter aggregation and wait for page 2.',
+            expects: [
+                'Aggregation created: <code>IN_PROGRESS</code> (1/0 pages — total unknown until last page)',
+                'Status: <code>PROCESSING</code> (waiting)',
+                'No delivery yet'
+            ],
+            msg: `{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
+:20:MULTIREF01
+:25:123456789
+:28C:00050/001
+:60F:C210401EUR10000,
+:61:2104010401DR500,NTRFREF020//ACCT-OWNER
+:61:2104010401DR300,NTRFREF021//ACCT-OWNER
+:62M:C210401EUR9200,
+-}`
+        },
+        {
+            id: 'multi-mt940-p2',
+            title: 'Multi-Page MT940 — Page 2 of 2',
+            tag: 'MT940 MULTI',
+            tagColor: 'info',
+            desc: 'Final page of the 2-page statement (HSBC UK → Citi US). Has intermediate opening (:60M:) and final closing (:62F:). Completes aggregation and triggers routing.',
+            expects: [
+                'Aggregation completed: <code>COMPLETED</code> (2/2 pages)',
+                'Combined statement routed to <code>REPORTING.Q1</code>',
+                'No SWIFT relay (relay config is for DEUTDEFF / BNPAFRPP only)'
+            ],
+            msg: `{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
+:20:MULTIREF01
+:25:123456789
+:28C:00050/002
+:60M:C210401EUR9200,
+:61:2104010401CR2000,NTRFREF022//ACCT-OWNER
+:62F:C210401EUR11200,
+-}`
+        },
+        {
+            id: 'mt942',
+            title: 'MT942 Interim Transaction Report',
+            tag: 'MT942',
+            tagColor: 'warning',
+            desc: 'Intraday transaction report (Deutsche Bank → BNP Paribas). Different account and BICs from MT940/950. Both routing and relay match this BIC pair.',
+            expects: [
+                'Routed to <code>INTRADAY.Q1</code> (routing rule: DEUTDEFF / BNPAFRPP / acct 987654321)',
+                'Relayed to <code>SWIFT.RELAY</code> (relay config match: DEUTDEFF / BNPAFRPP)',
+                'Status: <code>COMPLETED</code>'
+            ],
+            msg: `{1:F01DEUTDEFFAXXX0000000000}{2:I942BNPAFRPPXXXXN}{4:
+:20:INTRADAY01
+:25:987654321
+:28C:00001/001
+:34F:EUR100,
+:13D:2104011200+0100
+:61:2104010401CR500,NTRFREF030//ACCT-OWNER
+:90D:1EUR100,
+:90C:1EUR500,
+-}`
+        },
+        {
+            id: 'mt950',
+            title: 'MT950 Statement Message',
+            tag: 'MT950',
+            tagColor: 'success',
+            desc: 'Account statement (HSBC UK → Citi US). Routes to REPORTING.Q2 via CSV-loaded rule. No relay for this BIC pair.',
+            expects: [
+                'Routed to <code>REPORTING.Q2</code> (CSV rule: HSBCGB2L / CITIUS33 / acct 123456789)',
+                'No SWIFT relay (relay config is for DEUTDEFF / BNPAFRPP only)',
+                'Status: <code>COMPLETED</code>'
+            ],
+            msg: `{1:F01HSBCGB2LAXXX0000000000}{2:I950CITIUS33XXXXN}{4:
+:20:MT950REF01
+:25:123456789
+:28C:00001/001
+:60F:C210501EUR50000,
+:61:2105010501DR5000,NTRFREF040//ACCT-OWNER
+:61:2105010501CR8000,NTRFREF041//ACCT-OWNER
+:62F:C210501EUR53000,
+-}`
+        },
+        {
+            id: 'mt941',
+            title: 'MT941 Balance Report',
+            tag: 'MT941',
+            tagColor: 'secondary',
+            desc: 'Balance report (Commerzbank → SocGen). Uses yet another BIC pair — matches the wildcard routing rule for MT941.',
+            expects: [
+                'Routed to <code>DEFAULT.Q1</code> (wildcard CSV rule: * / MT941 / * / *)',
+                'No SWIFT relay (no relay config for COBADEFF / SOGEFRPP)',
+                'Status: <code>COMPLETED</code>'
+            ],
+            msg: `{1:F01COBADEFFAXXX0000000000}{2:I941SOGEFRPPXXXXN}{4:
+:20:BAL941REF01
+:25:555555555
+:28C:00001/001
+:60F:C210601EUR25000,
+:62F:C210601EUR25000,
+-}`
+        },
+        {
+            id: 'no-route',
+            title: 'No Matching Routing Rule',
+            tag: 'NO ROUTE',
+            tagColor: 'danger',
+            desc: 'MT940 from JPMorgan → NatWest — account/BIC combination with no routing rule. Message is processed but has no delivery destinations.',
+            expects: [
+                'No routing rule match — warning logged',
+                'No deliveries (empty destination list)',
+                'Status: <code>COMPLETED</code> (processing succeeded, just no route)'
+            ],
+            msg: `{1:F01CHASGB2LAXXX0000000000}{2:I940NWBKGB2LXXXXN}{4:
+:20:NOROUTE01
+:25:000000000
+:28C:00001/001
+:60F:C210701EUR100,
+:61:2107010701DR10,NTRFREF050//ACCT-OWNER
+:62F:C210701EUR90,
+-}`
+        },
+        {
+            id: 'dup-page',
+            title: 'Duplicate Page (Re-send Page 1)',
+            tag: 'DUPLICATE',
+            tagColor: 'danger',
+            desc: 'Submit the same multi-page page 1 again (HSBC UK → Citi US). Aggregation service detects the duplicate via SHA-256 checksum and rejects it.',
+            expects: [
+                'Aggregation rejects duplicate (checksum match)',
+                'Status: <code>FAILED</code> with error "Aggregation rejected (duplicate page)"',
+                'No new deliveries'
+            ],
+            msg: `{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
+:20:MULTIREF01
+:25:123456789
+:28C:00050/001
+:60F:C210401EUR10000,
+:61:2104010401DR500,NTRFREF020//ACCT-OWNER
+:61:2104010401DR300,NTRFREF021//ACCT-OWNER
+:62M:C210401EUR9200,
+-}`
+        }
+    ];
+
+    const $ = id => document.getElementById(id);
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = String(s);
+        return d.innerHTML;
+    }
+
+    function showToast(msg, success) {
+        const toast = $('successToast');
+        toast.className = `toast align-items-center border-0 text-bg-${success ? 'success' : 'danger'}`;
+        $('toastMsg').textContent = msg;
+        bootstrap.Toast.getOrCreateInstance(toast, { delay: 2000 }).show();
+    }
+
+    async function submitMessage(msg) {
+        const res = await fetch('/test/ods-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rawMessage: msg })
+        });
+        return res.ok;
+    }
+
+    // Render sample cards
+    function render() {
+        const container = $('samples');
+        container.innerHTML = SAMPLES.map((s, i) => `
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge bg-${s.tagColor} scenario-tag me-1">${esc(s.tag)}</span>
+                                <strong>${esc(s.title)}</strong>
+                            </div>
+                            <button class="btn btn-primary btn-sm submit-btn" data-idx="${i}">
+                                <i class="bi bi-send-fill me-1"></i>Submit
+                            </button>
+                        </div>
+                        <p class="scenario-desc mb-2">${esc(s.desc)}</p>
+                        <div class="expects mb-2">
+                            <strong style="font-size:0.75rem;">Expected:</strong>
+                            <ul class="mb-0 ps-3">${s.expects.map(e => '<li>' + e + '</li>').join('')}</ul>
+                        </div>
+                        <div class="sample-msg">${esc(s.msg.trim())}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Bind submit buttons
+        container.querySelectorAll('.submit-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const idx = parseInt(btn.dataset.idx);
+                const s = SAMPLES[idx];
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+                const ok = await submitMessage(s.msg);
+                showToast(ok ? `${s.title} submitted` : `Failed to submit ${s.title}`, ok);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i>Submit';
+            });
+        });
+    }
+
+    // Submit all single-page scenarios (skip multi-page p2 and duplicate)
+    $('runAllBtn').addEventListener('click', async () => {
+        const btn = $('runAllBtn');
+        btn.disabled = true;
+        const singles = SAMPLES.filter(s => !['multi-mt940-p2', 'dup-page'].includes(s.id));
+        let ok = 0;
+        for (const s of singles) {
+            if (await submitMessage(s.msg)) ok++;
+        }
+        showToast(`Submitted ${ok}/${singles.length} scenarios`, ok === singles.length);
+        btn.disabled = false;
+    });
+
+    // Run multi-page sequence: page 1, then page 2
+    $('runMultiPageBtn').addEventListener('click', async () => {
+        const btn = $('runMultiPageBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending page 1...';
+        const p1 = SAMPLES.find(s => s.id === 'multi-mt940-p1');
+        const p2 = SAMPLES.find(s => s.id === 'multi-mt940-p2');
+        await submitMessage(p1.msg);
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending page 2...';
+        await submitMessage(p2.msg);
+        showToast('Multi-page sequence complete — check dashboard', true);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-layers me-1"></i>Run Multi-Page Sequence';
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>
