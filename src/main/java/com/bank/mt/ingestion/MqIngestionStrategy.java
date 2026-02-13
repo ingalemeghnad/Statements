@@ -1,6 +1,5 @@
 package com.bank.mt.ingestion;
 
-import com.bank.mt.aggregation.AggregationFilter;
 import com.bank.mt.aggregation.AggregationService;
 import com.bank.mt.domain.AggregationResult;
 import com.bank.mt.domain.MtMessageOds;
@@ -15,43 +14,42 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * MQ-based ingestion strategy — receives raw MT messages from an inbound queue.
+ *
+ * In production, wire this with @JmsListener or a platform-specific MQ listener
+ * (e.g., IBM MQ, RabbitMQ, ActiveMQ) pointing to the configured inbound queue.
+ *
+ * For POC purposes, the REST controller invokes onMessage() directly to simulate
+ * MQ delivery without requiring a running broker.
+ */
 @Component
-@ConditionalOnProperty(name = "mt.ingestion.mode", havingValue = "POLLING", matchIfMissing = true)
-public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
+@ConditionalOnProperty(name = "mt.ingestion.mode", havingValue = "MQ")
+public class MqIngestionStrategy implements MtIngestionStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(PollingOdsIngestionStrategy.class);
+    private static final Logger log = LoggerFactory.getLogger(MqIngestionStrategy.class);
 
     private final MtMessageOdsRepository odsRepository;
     private final MtParser parser;
-    private final AggregationFilter aggregationFilter;
     private final AggregationService aggregationService;
     private final RoutingService routingService;
     private final DeliveryService deliveryService;
     private final Counter processedCounter;
 
-    @Value("${mt.ingestion.polling.batch-size:200}")
-    private int batchSize;
-
-    public PollingOdsIngestionStrategy(MtMessageOdsRepository odsRepository,
-                                       MtParser parser,
-                                       AggregationFilter aggregationFilter,
-                                       AggregationService aggregationService,
-                                       RoutingService routingService,
-                                       DeliveryService deliveryService,
-                                       MeterRegistry meterRegistry) {
+    public MqIngestionStrategy(MtMessageOdsRepository odsRepository,
+                               MtParser parser,
+                               AggregationService aggregationService,
+                               RoutingService routingService,
+                               DeliveryService deliveryService,
+                               MeterRegistry meterRegistry) {
         this.odsRepository = odsRepository;
         this.parser = parser;
-        this.aggregationFilter = aggregationFilter;
         this.aggregationService = aggregationService;
         this.routingService = routingService;
         this.deliveryService = deliveryService;
@@ -59,44 +57,29 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${mt.ingestion.polling.interval-ms:5000}")
-    @Transactional
     public void start() {
-        log.debug("Polling ODS for new messages (batch size: {})", batchSize);
-        List<MtMessageOds> batch = odsRepository.findByStatusOrderByIdLimit(
-                OdsStatus.NEW, PageRequest.of(0, batchSize));
+        log.info("MQ ingestion strategy active — listening on inbound queue");
+    }
 
-        if (batch.isEmpty()) {
-            return;
-        }
+    /**
+     * Processes a raw MT message received from the MQ inbound queue.
+     * Saves to ODS for audit, then routes through the pipeline.
+     */
+    public void onMessage(String rawMessage) {
+        log.info("Received message from MQ inbound queue ({} chars)", rawMessage.length());
 
-        log.info("Picked up {} messages from ODS", batch.size());
+        // Persist to ODS for audit trail
+        MtMessageOds ods = new MtMessageOds();
+        ods.setRawMessage(rawMessage);
+        ods.setStatus(OdsStatus.PROCESSING);
+        ods = odsRepository.save(ods);
 
-        // Mark as PROCESSING
-        List<Long> ids = batch.stream().map(MtMessageOds::getId).toList();
-        odsRepository.updateStatusBatch(ids, OdsStatus.NEW, OdsStatus.PROCESSING);
-
-        for (MtMessageOds ods : batch) {
-            processMessage(ods);
-        }
+        processMessage(ods);
     }
 
     private void processMessage(MtMessageOds ods) {
         try {
             MtStatement statement = parser.parse(ods.getRawMessage());
-
-            if (!aggregationFilter.shouldAggregate(statement)) {
-                // Skip aggregation — route individual page directly
-                log.info("Aggregation skipped for ref={} receiverBic={} — routing directly",
-                        statement.getTransactionReference(), statement.getReceiverBic());
-                if (routeAndDeliver(statement)) {
-                    markCompleted(ods);
-                } else {
-                    markFailed(ods, "Delivery failed after retries");
-                }
-                processedCounter.increment();
-                return;
-            }
 
             AggregationResult result = aggregationService.aggregate(statement, ods.getId());
 
@@ -122,7 +105,7 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
 
             processedCounter.increment();
         } catch (Exception e) {
-            log.error("Failed to process ODS message id={}", ods.getId(), e);
+            log.error("Failed to process MQ message odsId={}", ods.getId(), e);
             markFailed(ods, e.getMessage());
         }
     }
@@ -152,7 +135,7 @@ public class PollingOdsIngestionStrategy implements MtIngestionStrategy {
 
     private void markFailedByIds(List<Long> odsIds, String reason) {
         for (Long odsId : odsIds) {
-            odsRepository.findById(odsId).ifPresent(ods -> markFailed(ods, reason));
+            odsRepository.findById(odsId).ifPresent(o -> markFailed(o, reason));
         }
     }
 }

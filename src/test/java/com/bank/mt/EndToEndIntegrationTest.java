@@ -2,7 +2,7 @@ package com.bank.mt;
 
 import com.bank.mt.delivery.MockDeliveryAdapter;
 import com.bank.mt.domain.*;
-import com.bank.mt.ingestion.PollingOdsIngestionStrategy;
+import com.bank.mt.ingestion.MqIngestionStrategy;
 import com.bank.mt.repository.*;
 import com.bank.mt.routing.RoutingService;
 import com.bank.mt.ruleloader.RuleLoaderService;
@@ -23,8 +23,7 @@ class EndToEndIntegrationTest {
     @Autowired private MtMessageOdsRepository odsRepo;
     @Autowired private RoutingRuleRepository ruleRepo;
     @Autowired private RelayConfigRepository relayRepo;
-    @Autowired private RoutingBicExclusionRepository exclusionRepo;
-    @Autowired private PollingOdsIngestionStrategy ingestion;
+    @Autowired private MqIngestionStrategy ingestion;
     @Autowired private MockDeliveryAdapter mockAdapter;
     @Autowired private RoutingService routingService;
     @Autowired private RuleLoaderService ruleLoaderService;
@@ -36,11 +35,11 @@ class EndToEndIntegrationTest {
 
     @Test
     @Order(1)
-    void singlePageMt940_endToEnd() throws Exception {
-        // Insert a fresh single-page MT940
-        MtMessageOds ods = new MtMessageOds();
-        ods.setRawMessage("""
-                {1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+    void singlePageMt940_endToEnd() {
+        routingService.refreshCache();
+
+        ingestion.onMessage("""
+                {1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
                 :20:E2EREF01
                 :25:123456789
                 :28C:00001/001
@@ -48,37 +47,35 @@ class EndToEndIntegrationTest {
                 :61:2101010101DR100,
                 :62F:C210101EUR900,
                 -}""");
-        ods.setStatus(OdsStatus.NEW);
-        odsRepo.save(ods);
-
-        // Ensure routing rule and relay config exist (from V2 migration)
-        routingService.refreshCache();
-
-        // Trigger polling
-        ingestion.start();
-        Thread.sleep(500);
 
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
 
         boolean hasReportingQ1 = deliveries.stream()
                 .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination())
                         && "123456789".equals(d.getAccountNumber()));
-        boolean hasSwiftRelay = deliveries.stream()
-                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination())
-                        && "123456789".equals(d.getAccountNumber()));
 
         assertTrue(hasReportingQ1, "Expected delivery to REPORTING.Q1, got: " + deliveries.stream()
                 .map(d -> d.getDestination() + "/" + d.getAccountNumber()).toList());
-        assertTrue(hasSwiftRelay, "Expected relay to SWIFT.RELAY");
+
+        // Relay config is for DEUTDEFF/BNPAFRPP, not HSBCGB2L/CITIUS33 — no relay expected
+        boolean hasSwiftRelay = deliveries.stream()
+                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination()));
+        assertFalse(hasSwiftRelay, "No relay expected for HSBCGB2L/CITIUS33 BIC pair");
+
+        // Verify ODS audit trail was created
+        List<MtMessageOds> odsMessages = odsRepo.findAll();
+        assertTrue(odsMessages.stream().anyMatch(m -> m.getStatus() == OdsStatus.COMPLETED),
+                "ODS audit record should be marked COMPLETED");
     }
 
     @Test
     @Order(2)
-    void multiPageMt940_aggregationAndDelivery() throws Exception {
-        // Insert page 1 of 2 (with :60F: opening balance, no :62F: final)
-        MtMessageOds page1 = new MtMessageOds();
-        page1.setRawMessage("""
-                {1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+    void multiPageMt940_aggregationAndDelivery() {
+        routingService.refreshCache();
+
+        // Send page 1 of 2 (HSBC UK → Citi US)
+        ingestion.onMessage("""
+                {1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
                 :20:MPREF01
                 :25:123456789
                 :28C:00010/001
@@ -86,17 +83,10 @@ class EndToEndIntegrationTest {
                 :61:2102010201DR200,
                 :62M:C210201EUR4800,
                 -}""");
-        page1.setStatus(OdsStatus.NEW);
-        odsRepo.save(page1);
 
-        // Poll page 1 — should aggregate (pending)
-        ingestion.start();
-        Thread.sleep(300);
-
-        // Insert page 2 of 2 (with :62F: final balance)
-        MtMessageOds page2 = new MtMessageOds();
-        page2.setRawMessage("""
-                {1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+        // Send page 2 of 2 (HSBC UK → Citi US)
+        ingestion.onMessage("""
+                {1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
                 :20:MPREF01
                 :25:123456789
                 :28C:00010/002
@@ -104,14 +94,6 @@ class EndToEndIntegrationTest {
                 :61:2102010201CR1000,
                 :62F:C210201EUR5800,
                 -}""");
-        page2.setStatus(OdsStatus.NEW);
-        odsRepo.save(page2);
-
-        routingService.refreshCache();
-
-        // Poll page 2 — should complete aggregation and route
-        ingestion.start();
-        Thread.sleep(500);
 
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
         assertFalse(deliveries.isEmpty(), "Expected deliveries after multi-page aggregation");
@@ -120,33 +102,28 @@ class EndToEndIntegrationTest {
                 .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination()));
         assertTrue(hasReporting, "Expected delivery to REPORTING.Q1 for multi-page MT940");
 
-        MtMessageOds persistedPage1 = odsRepo.findById(page1.getId()).orElseThrow();
-        MtMessageOds persistedPage2 = odsRepo.findById(page2.getId()).orElseThrow();
-        assertEquals(OdsStatus.COMPLETED, persistedPage1.getStatus(),
-                "All aggregated pages should be marked COMPLETED");
-        assertEquals(OdsStatus.COMPLETED, persistedPage2.getStatus(),
-                "All aggregated pages should be marked COMPLETED");
+        // Verify all related ODS records are COMPLETED
+        List<MtMessageOds> allOds = odsRepo.findAll();
+        long completedCount = allOds.stream().filter(m -> m.getStatus() == OdsStatus.COMPLETED).count();
+        assertTrue(completedCount >= 2, "All aggregated pages should be marked COMPLETED");
     }
 
     @Test
     @Order(3)
-    void mt942_routesCorrectly() throws Exception {
-        // Add routing rule for MT942
+    void mt942_routesAndRelays() {
         RoutingRule rule = new RoutingRule();
         rule.setAccountNumber("987654321");
         rule.setMessageType("MT942");
-        rule.setSenderBic("BANKGB22");
-        rule.setReceiverBic("CLIENTBI");
+        rule.setSenderBic("DEUTDEFF");
+        rule.setReceiverBic("BNPAFRPP");
         rule.setDestinationQueue("INTRADAY.Q1");
         rule.setActive(true);
         rule.setSource(RuleSource.UI);
         ruleRepo.save(rule);
         routingService.refreshCache();
 
-        // Insert MT942 message
-        MtMessageOds ods = new MtMessageOds();
-        ods.setRawMessage("""
-                {1:F01BANKGB22AXXX0000000000}{2:I942CLIENTBICXXXXN}{4:
+        ingestion.onMessage("""
+                {1:F01DEUTDEFFAXXX0000000000}{2:I942BNPAFRPPXXXXN}{4:
                 :20:MT942REF
                 :25:987654321
                 :28C:00001/001
@@ -156,17 +133,17 @@ class EndToEndIntegrationTest {
                 :90D:1EUR100,
                 :90C:1EUR500,
                 -}""");
-        ods.setStatus(OdsStatus.NEW);
-        odsRepo.save(ods);
-
-        ingestion.start();
-        Thread.sleep(500);
 
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
         boolean hasIntradayQ1 = deliveries.stream()
                 .anyMatch(d -> "INTRADAY.Q1".equals(d.getDestination()));
         assertTrue(hasIntradayQ1, "Expected delivery to INTRADAY.Q1 for MT942, got: " +
                 deliveries.stream().map(DeliveryRecord::getDestination).toList());
+
+        // Relay config matches DEUTDEFF/BNPAFRPP — relay expected
+        boolean hasSwiftRelay = deliveries.stream()
+                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination()));
+        assertTrue(hasSwiftRelay, "Expected relay to SWIFT.RELAY for DEUTDEFF/BNPAFRPP BIC pair");
     }
 
     @Test
@@ -223,63 +200,5 @@ class EndToEndIntegrationTest {
         boolean fileRulesExist = ruleRepo.findAll().stream()
                 .anyMatch(r -> r.getSource() == RuleSource.FILE);
         assertTrue(fileRulesExist, "FILE rules should be loaded");
-    }
-
-    @Test
-    @Order(6)
-    void routingExclusion_appliesByMessageTypeOrWildcard() {
-        RoutingBicExclusion exclusion = new RoutingBicExclusion();
-        exclusion.setBranchCode("LON");
-        exclusion.setMessageType("MT942");
-        exclusion.setActive(true);
-        exclusionRepo.save(exclusion);
-
-        RoutingRule mt940Rule = new RoutingRule();
-        mt940Rule.setAccountNumber("TYPETEST");
-        mt940Rule.setMessageType("MT940");
-        mt940Rule.setSenderBic("BANKGB22");
-        mt940Rule.setReceiverBic("CLIENTBI");
-        mt940Rule.setDestinationQueue("TYPE940.Q1");
-        mt940Rule.setActive(true);
-        mt940Rule.setSource(RuleSource.UI);
-        ruleRepo.save(mt940Rule);
-
-        RoutingRule mt942Rule = new RoutingRule();
-        mt942Rule.setAccountNumber("TYPETEST");
-        mt942Rule.setMessageType("MT942");
-        mt942Rule.setSenderBic("BANKGB22");
-        mt942Rule.setReceiverBic("CLIENTBI");
-        mt942Rule.setDestinationQueue("TYPE942.Q1");
-        mt942Rule.setActive(true);
-        mt942Rule.setSource(RuleSource.UI);
-        ruleRepo.save(mt942Rule);
-
-        routingService.refreshCache();
-
-        MtStatement mt940 = new MtStatement();
-        mt940.setTransactionReference("TYPE-940");
-        mt940.setAccountNumber("TYPETEST");
-        mt940.setMessageType("MT940");
-        mt940.setSenderBic("BANKGB22");
-        mt940.setReceiverBic("CLIENTBI");
-        mt940.setReceiverBicBranch("LON");
-
-        DeliveryInstruction mt940Instruction = routingService.route(mt940);
-        assertFalse(mt940Instruction.getDownstreamDestinations().isEmpty(),
-                "MT940 should not be skipped by MT942-only exclusion");
-
-        MtStatement mt942 = new MtStatement();
-        mt942.setTransactionReference("TYPE-942");
-        mt942.setAccountNumber("TYPETEST");
-        mt942.setMessageType("MT942");
-        mt942.setSenderBic("BANKGB22");
-        mt942.setReceiverBic("CLIENTBI");
-        mt942.setReceiverBicBranch("LON");
-
-        DeliveryInstruction mt942Instruction = routingService.route(mt942);
-        assertTrue(mt942Instruction.getDownstreamDestinations().isEmpty(),
-                "MT942 should be skipped by MT942 branch exclusion");
-        assertFalse(mt942Instruction.isRelayToSwift(),
-                "Skipped routing should not trigger relay");
     }
 }

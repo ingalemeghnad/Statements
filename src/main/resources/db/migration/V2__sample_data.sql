@@ -2,9 +2,9 @@
 -- Sample ODS messages for local testing
 -- ============================================================
 
--- 1. Single-page MT940
+-- 1. Single-page MT940 (HSBC UK → Citi US)
 INSERT INTO mt_message_ods (raw_message, status) VALUES (
-'{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+'{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
 :20:REF123
 :25:123456789
 :28C:00001/001
@@ -14,9 +14,9 @@ INSERT INTO mt_message_ods (raw_message, status) VALUES (
 -}',
 'NEW');
 
--- 2. Multi-page MT940 — page 1 of 2
+-- 2. Multi-page MT940 — page 1 of 2 (HSBC UK → Citi US)
 INSERT INTO mt_message_ods (raw_message, status) VALUES (
-'{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+'{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
 :20:REF456
 :25:123456789
 :28C:00002/002
@@ -26,9 +26,9 @@ INSERT INTO mt_message_ods (raw_message, status) VALUES (
 -}',
 'NEW');
 
--- 3. Multi-page MT940 — page 2 of 2
+-- 3. Multi-page MT940 — page 2 of 2 (HSBC UK → Citi US)
 INSERT INTO mt_message_ods (raw_message, status) VALUES (
-'{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+'{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
 :20:REF456
 :25:123456789
 :28C:00002/001
@@ -38,9 +38,9 @@ INSERT INTO mt_message_ods (raw_message, status) VALUES (
 -}',
 'NEW');
 
--- 4. MT942 interim transaction report
+-- 4. MT942 interim transaction report (Deutsche Bank → BNP Paribas)
 INSERT INTO mt_message_ods (raw_message, status) VALUES (
-'{1:F01BANKGB22AXXX0000000000}{2:I942CLIENTBICXXXXN}{4:
+'{1:F01DEUTDEFFAXXX0000000000}{2:I942BNPAFRPPXXXXN}{4:
 :20:REF789
 :25:987654321
 :28C:00001/001
@@ -53,14 +53,14 @@ INSERT INTO mt_message_ods (raw_message, status) VALUES (
 'NEW');
 
 -- ============================================================
--- Sample routing rule
+-- Sample routing rule (HSBC UK → Citi US for MT940)
 -- ============================================================
 INSERT INTO routing_rule (account_number, message_type, sender_bic, receiver_bic,
                           destination_queue, active, source)
-VALUES ('123456789', 'MT940', 'BANKGB22', 'CLIENTBI', 'REPORTING.Q1', true, 'UI');
+VALUES ('123456789', 'MT940', 'HSBCGB2L', 'CITIUS33', 'REPORTING.Q1', true, 'UI');
 
 -- ============================================================
--- Sample relay config
+-- Sample relay config (Deutsche Bank → BNP Paribas)
 -- ============================================================
 INSERT INTO relay_config (account_number, sender_bic, receiver_bic, active)
-VALUES ('123456789', 'BANKGB22', 'CLIENTBI', true);
+VALUES ('987654321', 'DEUTDEFF', 'BNPAFRPP', true);

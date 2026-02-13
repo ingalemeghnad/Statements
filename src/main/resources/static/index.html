@@ -18,14 +18,11 @@
         .pipeline-arrow { font-size: 1.5rem; color: #adb5bd; padding: 0 4px; }
         .pipeline-step .count { font-size: 1.6rem; font-weight: 700; color: #0d6efd; }
         .pipeline-step .label { font-size: 0.75rem; text-transform: uppercase; color: #6c757d; letter-spacing: 0.5px; }
-        .badge-NEW { background: #0dcaf0; color: #000; }
         .badge-PROCESSING { background: #ffc107; color: #000; }
         .badge-COMPLETED { background: #198754; }
         .badge-FAILED { background: #dc3545; }
         .badge-IN_PROGRESS { background: #ffc107; color: #000; }
         .badge-REJECTED { background: #dc3545; }
-        .badge-ALLOWED_BIC { background: #198754; }
-        .badge-EXCLUDED_BRANCH { background: #fd7e14; color: #000; }
         .msg-preview { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; font-size: 0.8rem; }
         .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
         .section-title { font-weight: 600; font-size: 1rem; }
@@ -44,13 +41,16 @@
 <nav class="navbar navbar-dark bg-dark mb-3">
     <div class="container-fluid">
         <span class="navbar-brand nav-brand"><i class="bi bi-bank2 me-2"></i>MT Statement Processor</span>
-        <span class="text-light d-flex align-items-center gap-2" style="font-size:0.82rem;">
-            <span class="refresh-indicator" id="refreshDot"></span>
-            <span id="refreshLabel">Auto-refresh ON</span>
-            <button class="btn btn-sm btn-outline-light ms-1" id="toggleRefresh" title="Toggle auto-refresh">
-                <i class="bi bi-pause-fill" id="toggleIcon"></i>
-            </button>
-        </span>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/samples.html" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-code me-1"></i>Samples</a>
+            <span class="text-light d-flex align-items-center gap-2" style="font-size:0.82rem;">
+                <span class="refresh-indicator" id="refreshDot"></span>
+                <span id="refreshLabel">Auto-refresh ON</span>
+                <button class="btn btn-sm btn-outline-light ms-1" id="toggleRefresh" title="Toggle auto-refresh">
+                    <i class="bi bi-pause-fill" id="toggleIcon"></i>
+                </button>
+            </span>
+        </div>
     </div>
 </nav>
 
@@ -61,16 +61,6 @@
         <div class="card-body py-3">
             <div class="pipeline" id="pipeline">
                 <div class="pipeline-step active">
-                    <div class="count" id="p-ods">-</div>
-                    <div class="label">ODS Messages</div>
-                </div>
-                <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
-                <div class="pipeline-step">
-                    <div class="count" id="p-parsed">-</div>
-                    <div class="label">Parsed</div>
-                </div>
-                <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
-                <div class="pipeline-step">
                     <div class="count" id="p-aggregated">-</div>
                     <div class="label">Marshalled</div>
                 </div>
@@ -95,7 +85,7 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <h6 class="section-title"><i class="bi bi-send me-1"></i>Submit MT Message</h6>
-                    <textarea class="form-control mb-2" id="submitMsg" rows="10">{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:
+                    <textarea class="form-control mb-2" id="submitMsg" rows="10">{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
 :20:NEWREF001
 :25:123456789
 :28C:00001/001
@@ -104,7 +94,7 @@
 :62F:C210301EUR1850,
 -}</textarea>
                     <button class="btn btn-primary btn-sm w-100" id="submitBtn">
-                        <i class="bi bi-plus-circle me-1"></i>Submit to ODS
+                        <i class="bi bi-plus-circle me-1"></i>Submit to MQ
                     </button>
                     <div id="submitStatus" class="mt-2"></div>
                 </div>
@@ -176,82 +166,11 @@
                     </div>
                 </div>
             </div>
-            <!-- Aggregation/Marshalling BIC Filters -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="section-title mb-0"><i class="bi bi-funnel me-1"></i>Aggregation/Marshalling BIC Filters</h6>
-                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#aggFilterForm">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </div>
-                    <div class="collapse mb-2" id="aggFilterForm">
-                        <div class="border rounded p-2 bg-light">
-                            <div class="row g-1 mb-1">
-                                <div class="col-7"><input class="form-control form-control-sm" id="af-bic" placeholder="BIC / Branch code"></div>
-                                <div class="col-5">
-                                    <select class="form-select form-select-sm" id="af-type">
-                                        <option value="ALLOWED_BIC">Allowed BIC</option>
-                                        <option value="EXCLUDED_BRANCH">Excluded Branch</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row g-1 mb-1">
-                                <div class="col-12"><input class="form-control form-control-sm" id="af-msgType" placeholder="Message type (blank or * = all, e.g. MT940)"></div>
-                            </div>
-                            <button class="btn btn-primary btn-sm w-100 mt-1" id="addAggFilterBtn">Add</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive" style="max-height:180px; overflow-y:auto;">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>Value</th><th>Type</th><th>Msg Type</th><th>On</th><th></th></tr></thead>
-                            <tbody id="aggFilterBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Statement Routing Branch Exclusions -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="section-title mb-0"><i class="bi bi-x-octagon me-1"></i>Statement Routing Branch Exclusions</h6>
-                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#routeExclForm">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </div>
-                    <div class="collapse mb-2" id="routeExclForm">
-                        <div class="border rounded p-2 bg-light">
-                            <input class="form-control form-control-sm mb-1" id="re-bic" placeholder="Branch code (last 3 chars)">
-                            <input class="form-control form-control-sm mb-1" id="re-msgType" placeholder="Message type (blank or * = all, e.g. MT940)">
-                            <button class="btn btn-primary btn-sm w-100" id="addRouteExclBtn">Add</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive" style="max-height:150px; overflow-y:auto;">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>Branch Code</th><th>Msg Type</th><th>On</th><th></th></tr></thead>
-                            <tbody id="routeExclBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Right column -->
         <div class="col-lg-8">
-            <!-- ODS Messages -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h6 class="section-title"><i class="bi bi-inbox me-1"></i>ODS Messages</h6>
-                    <div class="table-responsive" style="max-height:280px; overflow-y:auto;">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light"><tr><th>ID</th><th>Status</th><th>Retries</th><th>Error</th><th>Preview</th><th>Created</th></tr></thead>
-                            <tbody id="odsBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
             <!-- Aggregations -->
             <div class="card mb-3">
                 <div class="card-body">
@@ -374,34 +293,6 @@
         return d.innerHTML;
     }
 
-    // --- Load ODS messages ---
-    async function loadOds() {
-        try {
-            const msgs = await get('/test/ods-messages');
-            const body = $('odsBody');
-            if (!msgs.length) { body.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No messages</td></tr>'; return; }
-            body.innerHTML = msgs.map(m => `<tr>
-                <td>${m.id}</td>
-                <td>${badge(m.status)}</td>
-                <td>${m.retryCount || 0}</td>
-                <td>${esc(m.errorReason) || '-'}</td>
-                <td><span class="msg-preview" role="button" onclick="showMsg(${m.id})" title="Click to view">${esc(m.rawMessage?.substring(0,60))}</span></td>
-                <td>${fmtTime(m.createdAt)}</td>
-            </tr>`).join('');
-            // store for modal
-            window._odsMessages = msgs;
-        } catch(e) { console.error('loadOds', e); }
-    }
-
-    // --- Load stats + pipeline ---
-    async function loadStats() {
-        try {
-            const stats = await get('/test/ods-messages/stats');
-            $('p-ods').textContent = stats.TOTAL || 0;
-            $('p-parsed').textContent = (stats.COMPLETED || 0) + (stats.PROCESSING || 0);
-        } catch(e) { console.error('loadStats', e); }
-    }
-
     // --- Load aggregations ---
     async function loadAggregations() {
         try {
@@ -477,47 +368,12 @@
         } catch(e) { console.error('loadRelays', e); }
     }
 
-    // --- Load aggregation BIC filters ---
-    async function loadAggFilters() {
-        try {
-            const filters = await get('/api/aggregation-filters', true);
-            const body = $('aggFilterBody');
-            if (!filters.length) { body.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No filters</td></tr>'; return; }
-            body.innerHTML = filters.map(f => `<tr>
-                <td><code>${esc(f.bicValue)}</code></td>
-                <td>${badge(f.filterType)}</td>
-                <td>${esc(f.messageType) || '*'}</td>
-                <td>${f.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
-                <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteAggFilter(${f.id})"><i class="bi bi-trash3"></i></button></td>
-            </tr>`).join('');
-        } catch(e) { console.error('loadAggFilters', e); }
-    }
-
-    // --- Load routing BIC exclusions ---
-    async function loadRouteExcl() {
-        try {
-            const excls = await get('/api/routing-exclusions', true);
-            const body = $('routeExclBody');
-            if (!excls.length) { body.innerHTML = '<tr><td colspan="4" class="text-muted text-center">No exclusions</td></tr>'; return; }
-            body.innerHTML = excls.map(e => `<tr>
-                <td><code>${esc(e.branchCode)}</code></td>
-                <td>${esc(e.messageType) || '*'}</td>
-                <td>${e.active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
-                <td><button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="deleteRouteExcl(${e.id})"><i class="bi bi-trash3"></i></button></td>
-            </tr>`).join('');
-        } catch(e) { console.error('loadRouteExcl', e); }
-    }
-
     // --- Load all ---
     function loadAll() {
-        loadOds();
-        loadStats();
         loadAggregations();
         loadDeliveries();
         loadRules();
         loadRelays();
-        loadAggFilters();
-        loadRouteExcl();
     }
 
     // --- Submit message ---
@@ -571,34 +427,7 @@
         loadRelays();
     });
 
-    // --- Add aggregation BIC filter ---
-    $('addAggFilterBtn').addEventListener('click', async () => {
-        const filter = {
-            bicValue: $('af-bic').value,
-            filterType: $('af-type').value,
-            messageType: $('af-msgType').value || null,
-            active: true
-        };
-        await post('/api/aggregation-filters', filter, true);
-        $('af-bic').value = '';
-        $('af-msgType').value = '';
-        loadAggFilters();
-    });
-
-    // --- Add routing BIC exclusion ---
-    $('addRouteExclBtn').addEventListener('click', async () => {
-        const excl = {
-            branchCode: $('re-bic').value,
-            messageType: $('re-msgType').value || null,
-            active: true
-        };
-        await post('/api/routing-exclusions', excl, true);
-        $('re-bic').value = '';
-        $('re-msgType').value = '';
-        loadRouteExcl();
-    });
-
-    // --- Delete rule/relay/filter/exclusion (global) ---
+    // --- Delete rule/relay (global) ---
     window.deleteRule = async function(id) {
         await del('/api/routing-rules/' + id, true);
         loadRules();
@@ -607,23 +436,8 @@
         await del('/api/relay-config/' + id, true);
         loadRelays();
     };
-    window.deleteAggFilter = async function(id) {
-        await del('/api/aggregation-filters/' + id, true);
-        loadAggFilters();
-    };
-    window.deleteRouteExcl = async function(id) {
-        await del('/api/routing-exclusions/' + id, true);
-        loadRouteExcl();
-    };
 
     // --- Show raw message modal ---
-    window.showMsg = function(id) {
-        const msg = (window._odsMessages || []).find(m => m.id === id);
-        if (msg) {
-            $('msgModalBody').textContent = msg.rawMessage || '';
-            new bootstrap.Modal($('msgModal')).show();
-        }
-    };
     window.showRawMsg = function(el) {
         const raw = el.parentElement.querySelector('.d-none')?.textContent || '';
         $('msgModalBody').textContent = raw;
