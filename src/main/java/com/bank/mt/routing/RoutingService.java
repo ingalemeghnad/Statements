@@ -48,12 +48,13 @@ public class RoutingService {
 
     public DeliveryInstruction route(MtStatement statement) {
         List<String> destinations = evaluateRoutingRules(statement);
-        boolean relay = evaluateRelayConfig(statement);
+        String swiftReceiverBic = evaluateRelayConfig(statement);
 
-        log.info("Routing result for ref={}: destinations={}, relay={}",
-                statement.getTransactionReference(), destinations, relay);
+        log.info("Routing result for ref={}: destinations={}, swiftRelay={}",
+                statement.getTransactionReference(), destinations,
+                swiftReceiverBic != null ? swiftReceiverBic : "none");
 
-        return new DeliveryInstruction(destinations, relay, statement);
+        return new DeliveryInstruction(destinations, swiftReceiverBic, statement);
     }
 
     private List<String> evaluateRoutingRules(MtStatement statement) {
@@ -98,14 +99,18 @@ public class RoutingService {
         return ruleValue.equalsIgnoreCase(actualValue);
     }
 
-    private boolean evaluateRelayConfig(MtStatement statement) {
+    /**
+     * Evaluates relay config. Returns the SWIFT receiver BIC to use for relay,
+     * or null if no relay config matches.
+     */
+    private String evaluateRelayConfig(MtStatement statement) {
         for (RelayConfig relay : cachedRelays) {
             if (matchesField(relay.getAccountNumber(), statement.getAccountNumber())
                     && matchesField(relay.getSenderBic(), statement.getSenderBic())
                     && matchesField(relay.getReceiverBic(), statement.getReceiverBic())) {
-                return true;
+                return relay.getSwiftReceiverBic();
             }
         }
-        return false;
+        return null;
     }
 }

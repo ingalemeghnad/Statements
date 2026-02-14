@@ -10,12 +10,14 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class EndToEndIntegrationTest {
@@ -51,15 +53,15 @@ class EndToEndIntegrationTest {
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
 
         boolean hasReportingQ1 = deliveries.stream()
-                .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination())
+                .anyMatch(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination())
                         && "123456789".equals(d.getAccountNumber()));
 
-        assertTrue(hasReportingQ1, "Expected delivery to REPORTING.Q1, got: " + deliveries.stream()
+        assertTrue(hasReportingQ1, "Expected delivery to RECON.INTELLIMATCH.IN, got: " + deliveries.stream()
                 .map(d -> d.getDestination() + "/" + d.getAccountNumber()).toList());
 
         // Relay config is for DEUTDEFF/BNPAFRPP, not HSBCGB2L/CITIUS33 — no relay expected
         boolean hasSwiftRelay = deliveries.stream()
-                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination()));
+                .anyMatch(d -> "SWIFT.ALLIANCE.OUTBOUND".equals(d.getDestination()));
         assertFalse(hasSwiftRelay, "No relay expected for HSBCGB2L/CITIUS33 BIC pair");
 
         // Verify ODS audit trail was created
@@ -99,8 +101,27 @@ class EndToEndIntegrationTest {
         assertFalse(deliveries.isEmpty(), "Expected deliveries after multi-page aggregation");
 
         boolean hasReporting = deliveries.stream()
-                .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination()));
-        assertTrue(hasReporting, "Expected delivery to REPORTING.Q1 for multi-page MT940");
+                .anyMatch(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination()));
+        assertTrue(hasReporting, "Expected delivery to RECON.INTELLIMATCH.IN for multi-page MT940");
+
+        // Verify combined message has single header, merged transactions, no intermediate balances
+        DeliveryRecord delivered = deliveries.stream()
+                .filter(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination()))
+                .findFirst().orElseThrow();
+        String raw = delivered.getRawMessage();
+        // Single header from page 1
+        assertTrue(raw.startsWith("{1:F01HSBCGB2L"), "Combined should have single Block 1 header");
+        assertEquals(1, raw.split("\\{1:").length - 1, "Should have exactly one Block 1 header");
+        assertEquals(1, raw.split("\\{2:").length - 1, "Should have exactly one Block 2 header");
+        // Opening balance from page 1, closing from page 2
+        assertTrue(raw.contains(":60F:"), "Combined should have :60F: from first page");
+        assertTrue(raw.contains(":62F:"), "Combined should have :62F: from last page");
+        // No intermediate balance tags
+        assertFalse(raw.contains(":60M:"), "Combined should NOT have intermediate opening :60M:");
+        assertFalse(raw.contains(":62M:"), "Combined should NOT have intermediate closing :62M:");
+        // Transactions from both pages
+        assertTrue(raw.contains("DR200,"), "Combined should have transaction from page 1");
+        assertTrue(raw.contains("CR1000,"), "Combined should have transaction from page 2");
 
         // Verify all related ODS records are COMPLETED
         List<MtMessageOds> allOds = odsRepo.findAll();
@@ -116,7 +137,7 @@ class EndToEndIntegrationTest {
         rule.setMessageType("MT942");
         rule.setSenderBic("DEUTDEFF");
         rule.setReceiverBic("BNPAFRPP");
-        rule.setDestinationQueue("INTRADAY.Q1");
+        rule.setDestinationQueue("CASH.CALYPSO.INTRADAY");
         rule.setActive(true);
         rule.setSource(RuleSource.UI);
         ruleRepo.save(rule);
@@ -136,14 +157,21 @@ class EndToEndIntegrationTest {
 
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
         boolean hasIntradayQ1 = deliveries.stream()
-                .anyMatch(d -> "INTRADAY.Q1".equals(d.getDestination()));
-        assertTrue(hasIntradayQ1, "Expected delivery to INTRADAY.Q1 for MT942, got: " +
+                .anyMatch(d -> "CASH.CALYPSO.INTRADAY".equals(d.getDestination()));
+        assertTrue(hasIntradayQ1, "Expected delivery to CASH.CALYPSO.INTRADAY for MT942, got: " +
                 deliveries.stream().map(DeliveryRecord::getDestination).toList());
 
-        // Relay config matches DEUTDEFF/BNPAFRPP — relay expected
-        boolean hasSwiftRelay = deliveries.stream()
-                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination()));
-        assertTrue(hasSwiftRelay, "Expected relay to SWIFT.RELAY for DEUTDEFF/BNPAFRPP BIC pair");
+        // Relay config matches DEUTDEFF/BNPAFRPP — relay expected with BIC replaced to COBADEFF
+        DeliveryRecord relayDelivery = deliveries.stream()
+                .filter(d -> "SWIFT.ALLIANCE.OUTBOUND".equals(d.getDestination()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(relayDelivery, "Expected relay to SWIFT.ALLIANCE.OUTBOUND for DEUTDEFF/BNPAFRPP BIC pair");
+
+        // Verify receiver BIC was replaced in the relayed message
+        String relayRaw = relayDelivery.getRawMessage();
+        assertTrue(relayRaw.contains("COBADEFF"), "Relayed message should have receiver BIC replaced to COBADEFF");
+        assertFalse(relayRaw.contains("BNPAFRPP"), "Relayed message should NOT contain original receiver BIC BNPAFRPP");
     }
 
     @Test

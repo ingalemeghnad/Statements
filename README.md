@@ -5,27 +5,24 @@ Spring Boot 3 (Java 17) service for processing SWIFT MT940/941/942/950 statement
 ## Architecture
 
 ```
-ODS → Ingestion (Polling/Event) → Parser → Aggregation/Marshalling Filter
-                                                ↓ passes filter         ↓ skipped
-                                           Aggregation          ────────┐
-                                                ↓ complete              ↓
-                                     Statement Routing ←────────────────┘
-                                       ↓ pref match      ↓ no match     ↓ branch excluded
-                                    Delivery      Exception Queue       (skipped)
-                                       ↓
-                                  Downstream + SWIFT Relay
+MQ Inbound → MqIngestionStrategy → ODS (audit) → Parser → Aggregation/Marshalling
+                                                                ↓ complete
+                                                         Statement Routing
+                                                           ↓ pref match      ↓ no match
+                                                        Delivery           (warning logged)
+                                                           ↓
+                                                     Downstream + SWIFT Relay
 
 Rule CSV → Rule Loader → routing_rule table
-CRUD API → routing_rule + relay_config + aggregation_bic_filter + routing_bic_exclusion
+CRUD API → routing_rule + relay_config
 ```
 
 ### Pipeline Stages
 
-1. **Ingestion** — Polls ODS table for NEW messages, marks PROCESSING, parses raw SWIFT
-2. **Aggregation/Marshalling Filter** — Checks receiver BIC against allowed list + branch exclusions. Messages that don't pass skip aggregation and go directly to statement routing
-3. **Aggregation** — Multi-page statements collected until all pages arrive (1-hour expiry). Single-page statements pass through immediately
-4. **Statement Routing** — Evaluates preference rules (account, message type, sender BIC, receiver BIC — all support `*` wildcard). Branch exclusions skip routing entirely. Unmatched messages go to exception queue
-5. **Delivery** — Sends to downstream queues + optional SWIFT relay with retry
+1. **MQ Ingestion** — Receives raw SWIFT messages from MQ inbound queue, saves to ODS for audit, then processes through the pipeline. (POC simulates MQ via direct method call; production would use `@JmsListener`)
+2. **Aggregation/Marshalling** — Multi-page statements collected until all pages arrive (configurable expiry). Single-page statements pass through immediately. Duplicate pages detected via SHA-256 checksum
+3. **Statement Routing** — Evaluates preference rules (account, message type, sender BIC, receiver BIC — all support `*` wildcard). Unmatched messages log a warning with no delivery
+4. **Delivery** — Sends to downstream queues + optional SWIFT relay (based on relay config) with retry
 
 ## Quick Start
 
@@ -33,29 +30,48 @@ CRUD API → routing_rule + relay_config + aggregation_bic_filter + routing_bic_
 ./mvnw spring-boot:run
 ```
 
-The application starts on **port 8080** with an in-memory H2 database.
+The application starts on **port 8080** with a file-based H2 database (`./data/mtdb`).
 Sample data is loaded automatically via Flyway migrations.
 
 ### Demo Dashboard
 
 Open **http://localhost:8080/** in a browser to access the demo UI with:
 
-- Pipeline visualization with live counts
+- Pipeline visualization (Marshalled → Routed → Delivered)
 - Submit MT messages via textarea
-- View ODS messages, aggregation status, and deliveries
-- CRUD management for all configuration (routing preferences, relay config, BIC filters, branch exclusions)
+- View aggregation status and deliveries
+- CRUD management for routing preferences and relay config
 - Auto-refresh every 3 seconds (with pause/resume toggle)
+
+### Sample Messages
+
+Open **http://localhost:8080/samples.html** for pre-built test scenarios:
+
+| Scenario | Sender BIC | Receiver BIC | Account | Expected Route | Relay |
+|---|---|---|---|---|---|
+| Single-page MT940 | HSBCGB2L | CITIUS33 | 123456789 | RECON.INTELLIMATCH.IN | No |
+| Multi-page MT940 (2 pages) | HSBCGB2L | CITIUS33 | 123456789 | RECON.INTELLIMATCH.IN | No |
+| MT942 Intraday | DEUTDEFF | BNPAFRPP | 987654321 | CASH.CALYPSO.INTRADAY | Yes |
+| MT950 Statement | HSBCGB2L | CITIUS33 | 123456789 | GL.SAP.STMT.FEED | No |
+| MT941 Balance Report | COBADEFF | SOGEFRPP | 555555555 | ARCHIVE.COMPLI.STORE | No |
+| No Matching Rule | CHASGB2L | NWBKGB2L | 000000000 | None | No |
+| Duplicate Page | HSBCGB2L | CITIUS33 | 123456789 | Rejected | No |
 
 ## Verify End-to-End Flow
 
-After startup, the polling ingestion picks up sample ODS messages within 5 seconds.
-Check delivered messages:
+Submit a sample message and check deliveries:
 
 ```bash
+# Submit a message
+curl -X POST http://localhost:8080/test/ods-messages \
+  -H "Content-Type: application/json" \
+  -d '{"rawMessage":"{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:\n:20:TESTREF\n:25:123456789\n:28C:00001/001\n:60F:C210301EUR2000,\n:62F:C210301EUR1850,\n-}"}'
+
+# Check deliveries
 curl http://localhost:8080/test/deliveries | python3 -m json.tool
 ```
 
-You should see deliveries to `REPORTING.Q1` and `SWIFT.RELAY`.
+You should see a delivery to `RECON.INTELLIMATCH.IN`.
 
 ## API Endpoints
 
@@ -90,28 +106,6 @@ Routing rules match on `accountNumber`, `messageType`, `senderBic`, `receiverBic
 | PUT    | /api/relay-config/{id}| Update a config       |
 | DELETE | /api/relay-config/{id}| Delete a config       |
 
-### Aggregation/Marshalling BIC Filters (Basic Auth: admin/admin123)
-
-| Method | Path                       | Description           |
-|--------|----------------------------|-----------------------|
-| GET    | /api/aggregation-filters   | List all filters      |
-| POST   | /api/aggregation-filters   | Create a filter       |
-| DELETE | /api/aggregation-filters/{id}| Delete a filter     |
-
-Filter types:
-- `ALLOWED_BIC` — 8-char receiver BICs that should go through aggregation
-- `EXCLUDED_BRANCH` — Branch suffixes (last 3 chars of 11-char BIC) to skip aggregation
-
-### Statement Routing Branch Exclusions (Basic Auth: admin/admin123)
-
-| Method | Path                       | Description              |
-|--------|----------------------------|--------------------------|
-| GET    | /api/routing-exclusions    | List all exclusions      |
-| POST   | /api/routing-exclusions    | Create an exclusion      |
-| DELETE | /api/routing-exclusions/{id}| Delete an exclusion     |
-
-Branch codes (last 3 chars of full BIC) that skip statement routing entirely.
-
 ### Rule Loader (Basic Auth: admin/admin123)
 
 | Method | Path              | Description                   |
@@ -134,27 +128,12 @@ curl -u admin:admin123 http://localhost:8080/api/routing-rules
 # Create a routing rule with wildcard sender BIC
 curl -u admin:admin123 -X POST http://localhost:8080/api/routing-rules \
   -H "Content-Type: application/json" \
-  -d '{"accountNumber":"999999","messageType":"MT950","senderBic":"*","receiverBic":"BANKGB22","destinationQueue":"NEW.Q1","active":true}'
+  -d '{"accountNumber":"999999","messageType":"MT950","senderBic":"*","receiverBic":"HSBCGB2L","destinationQueue":"NEW.Q1","active":true}'
 
-# Add allowed BIC for aggregation
-curl -u admin:admin123 -X POST http://localhost:8080/api/aggregation-filters \
+# Add relay config for Deutsche Bank → BNP Paribas
+curl -u admin:admin123 -X POST http://localhost:8080/api/relay-config \
   -H "Content-Type: application/json" \
-  -d '{"bicValue":"BANKGB22","filterType":"ALLOWED_BIC","active":true}'
-
-# Add excluded branch for aggregation
-curl -u admin:admin123 -X POST http://localhost:8080/api/aggregation-filters \
-  -H "Content-Type: application/json" \
-  -d '{"bicValue":"XXX","filterType":"EXCLUDED_BRANCH","active":true}'
-
-# Add branch exclusion for routing
-curl -u admin:admin123 -X POST http://localhost:8080/api/routing-exclusions \
-  -H "Content-Type: application/json" \
-  -d '{"branchCode":"LON","active":true}'
-
-# Submit a new message to ODS
-curl -X POST http://localhost:8080/test/ods-messages \
-  -H "Content-Type: application/json" \
-  -d '{"rawMessage":"{1:F01BANKGB22AXXX0000000000}{2:I940CLIENTBICXXXXN}{4:\n:20:TESTREF\n:25:123456789\n:28C:00001/001\n:60F:C210301EUR2000,\n:62F:C210301EUR1850,\n-}"}'
+  -d '{"accountNumber":"987654321","senderBic":"DEUTDEFF","receiverBic":"BNPAFRPP","active":true}'
 
 # Reload rules from CSV
 curl -u admin:admin123 -X POST http://localhost:8080/api/rules/reload
@@ -175,15 +154,11 @@ Key properties in `application.yml`:
 
 | Property                          | Default         | Description                         |
 |-----------------------------------|-----------------|-------------------------------------|
-| mt.ingestion.mode                 | POLLING         | POLLING or EVENT                    |
-| mt.ingestion.polling.batch-size   | 200             | Messages per poll                   |
-| mt.ingestion.polling.interval-ms  | 5000            | Poll interval                       |
-| mt.aggregation.expiry-minutes     | 60              | Multi-page timeout                  |
+| mt.ingestion.mode                 | MQ              | MQ ingestion mode                   |
+| mt.ingestion.mq.inbound-queue    | MT.INBOUND      | MQ inbound queue name               |
+| mt.aggregation.expiry-minutes     | 2               | Multi-page timeout (minutes)        |
 | mt.delivery.mode                  | MOCK            | MOCK or MQ                          |
 | mt.routing.rules-file-path        | classpath       | Path to CSV rules file              |
-| mt.routing.exception-queue        | EXCEPTION.QUEUE | Queue for unroutable messages       |
-
-Aggregation BIC filters and routing branch exclusions are managed via DB (CRUD API + UI), not application properties.
 
 ## Metrics
 
@@ -193,7 +168,5 @@ Available at `/actuator/metrics`:
 - `mt.aggregation.completed` — aggregations completed
 - `mt.aggregation.rejected` — aggregations rejected/expired
 - `mt.routing.cache.hit` — routing rule cache hits
-- `mt.routing.exception.queue` — messages sent to exception queue
-- `mt.routing.skipped` — messages skipped due to branch exclusion
 - `mt.delivery.success` — successful deliveries
 - `mt.delivery.failure` — failed deliveries

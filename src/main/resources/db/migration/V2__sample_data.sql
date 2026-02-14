@@ -57,7 +57,7 @@ INSERT INTO mt_message_ods (raw_message, status) VALUES (
 -- ============================================================
 INSERT INTO routing_rule (account_number, message_type, sender_bic, receiver_bic,
                           destination_queue, active, source)
-VALUES ('123456789', 'MT940', 'HSBCGB2L', 'CITIUS33', 'REPORTING.Q1', true, 'UI');
+VALUES ('123456789', 'MT940', 'HSBCGB2L', 'CITIUS33', 'RECON.INTELLIMATCH.IN', true, 'UI');
 
 -- ============================================================
 -- Sample relay config (Deutsche Bank → BNP Paribas)

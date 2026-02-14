@@ -4,21 +4,22 @@ import java.util.List;
 
 /**
  * Output of the routing module — lists downstream destinations
- * and whether the message should also be relayed to SWIFT.
+ * and optional SWIFT relay with receiver BIC replacement.
  */
 public class DeliveryInstruction {
 
     private final List<String> downstreamDestinations;
-    private final boolean relayToSwift;
+    private final String swiftReceiverBic; // null = no relay, non-null = relay with this BIC
     private final MtStatement statement;
 
-    public DeliveryInstruction(List<String> downstreamDestinations, boolean relayToSwift, MtStatement statement) {
+    public DeliveryInstruction(List<String> downstreamDestinations, String swiftReceiverBic, MtStatement statement) {
         this.downstreamDestinations = downstreamDestinations;
-        this.relayToSwift = relayToSwift;
+        this.swiftReceiverBic = swiftReceiverBic;
         this.statement = statement;
     }
 
     public List<String> getDownstreamDestinations() { return downstreamDestinations; }
-    public boolean isRelayToSwift() { return relayToSwift; }
+    public boolean isRelayToSwift() { return swiftReceiverBic != null; }
+    public String getSwiftReceiverBic() { return swiftReceiverBic; }
     public MtStatement getStatement() { return statement; }
 }
