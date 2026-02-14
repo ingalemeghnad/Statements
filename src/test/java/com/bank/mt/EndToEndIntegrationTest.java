@@ -161,10 +161,17 @@ class EndToEndIntegrationTest {
         assertTrue(hasIntradayQ1, "Expected delivery to CASH.CALYPSO.INTRADAY for MT942, got: " +
                 deliveries.stream().map(DeliveryRecord::getDestination).toList());
 
-        // Relay config matches DEUTDEFF/BNPAFRPP — relay expected
-        boolean hasSwiftRelay = deliveries.stream()
-                .anyMatch(d -> "SWIFT.ALLIANCE.OUTBOUND".equals(d.getDestination()));
-        assertTrue(hasSwiftRelay, "Expected relay to SWIFT.ALLIANCE.OUTBOUND for DEUTDEFF/BNPAFRPP BIC pair");
+        // Relay config matches DEUTDEFF/BNPAFRPP — relay expected with BIC replaced to COBADEFF
+        DeliveryRecord relayDelivery = deliveries.stream()
+                .filter(d -> "SWIFT.ALLIANCE.OUTBOUND".equals(d.getDestination()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(relayDelivery, "Expected relay to SWIFT.ALLIANCE.OUTBOUND for DEUTDEFF/BNPAFRPP BIC pair");
+
+        // Verify receiver BIC was replaced in the relayed message
+        String relayRaw = relayDelivery.getRawMessage();
+        assertTrue(relayRaw.contains("COBADEFF"), "Relayed message should have receiver BIC replaced to COBADEFF");
+        assertFalse(relayRaw.contains("BNPAFRPP"), "Relayed message should NOT contain original receiver BIC BNPAFRPP");
     }
 
     @Test

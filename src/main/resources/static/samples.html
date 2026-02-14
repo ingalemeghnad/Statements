@@ -131,7 +131,7 @@
             desc: 'Intraday transaction report (Deutsche Bank → BNP Paribas). Different account and BICs from MT940/950. Both routing and relay match this BIC pair.',
             expects: [
                 'Routed to <code>CASH.CALYPSO.INTRADAY</code> (routing rule: DEUTDEFF / BNPAFRPP / acct 987654321)',
-                'Relayed to <code>SWIFT.ALLIANCE.OUTBOUND</code> (relay config match: DEUTDEFF / BNPAFRPP)',
+                'Relayed to <code>SWIFT.ALLIANCE.OUTBOUND</code> with receiver BIC replaced: BNPAFRPP → <code>COBADEFF</code>',
                 'Status: <code>COMPLETED</code>'
             ],
             msg: `{1:F01DEUTDEFFAXXX0000000000}{2:I942BNPAFRPPXXXXN}{4:

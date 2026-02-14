@@ -20,6 +20,9 @@ public class RelayConfig {
     @Column(name = "receiver_bic")
     private String receiverBic;
 
+    @Column(name = "swift_receiver_bic")
+    private String swiftReceiverBic;
+
     @Column(name = "active")
     private boolean active;
 
@@ -51,6 +54,9 @@ public class RelayConfig {
 
     public String getReceiverBic() { return receiverBic; }
     public void setReceiverBic(String receiverBic) { this.receiverBic = receiverBic; }
+
+    public String getSwiftReceiverBic() { return swiftReceiverBic; }
+    public void setSwiftReceiverBic(String swiftReceiverBic) { this.swiftReceiverBic = swiftReceiverBic; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
