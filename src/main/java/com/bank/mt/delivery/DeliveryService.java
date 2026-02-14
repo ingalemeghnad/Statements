@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 public class DeliveryService {
 
     private static final Logger log = LoggerFactory.getLogger(DeliveryService.class);
-    private static final String SWIFT_RELAY_DESTINATION = "SWIFT.RELAY";
+    private static final String SWIFT_RELAY_DESTINATION = "SWIFT.ALLIANCE.OUTBOUND";
 
     private final DeliveryAdapter adapter;
     private final Counter successCounter;

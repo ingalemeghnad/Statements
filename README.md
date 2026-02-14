@@ -49,11 +49,11 @@ Open **http://localhost:8080/samples.html** for pre-built test scenarios:
 
 | Scenario | Sender BIC | Receiver BIC | Account | Expected Route | Relay |
 |---|---|---|---|---|---|
-| Single-page MT940 | HSBCGB2L | CITIUS33 | 123456789 | REPORTING.Q1 | No |
-| Multi-page MT940 (2 pages) | HSBCGB2L | CITIUS33 | 123456789 | REPORTING.Q1 | No |
-| MT942 Intraday | DEUTDEFF | BNPAFRPP | 987654321 | INTRADAY.Q1 | Yes |
-| MT950 Statement | HSBCGB2L | CITIUS33 | 123456789 | REPORTING.Q2 | No |
-| MT941 Balance Report | COBADEFF | SOGEFRPP | 555555555 | DEFAULT.Q1 | No |
+| Single-page MT940 | HSBCGB2L | CITIUS33 | 123456789 | RECON.INTELLIMATCH.IN | No |
+| Multi-page MT940 (2 pages) | HSBCGB2L | CITIUS33 | 123456789 | RECON.INTELLIMATCH.IN | No |
+| MT942 Intraday | DEUTDEFF | BNPAFRPP | 987654321 | CASH.CALYPSO.INTRADAY | Yes |
+| MT950 Statement | HSBCGB2L | CITIUS33 | 123456789 | GL.SAP.STMT.FEED | No |
+| MT941 Balance Report | COBADEFF | SOGEFRPP | 555555555 | ARCHIVE.COMPLI.STORE | No |
 | No Matching Rule | CHASGB2L | NWBKGB2L | 000000000 | None | No |
 | Duplicate Page | HSBCGB2L | CITIUS33 | 123456789 | Rejected | No |
 
@@ -71,7 +71,7 @@ curl -X POST http://localhost:8080/test/ods-messages \
 curl http://localhost:8080/test/deliveries | python3 -m json.tool
 ```
 
-You should see a delivery to `REPORTING.Q1`.
+You should see a delivery to `RECON.INTELLIMATCH.IN`.
 
 ## API Endpoints
 

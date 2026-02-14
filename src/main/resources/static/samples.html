@@ -69,7 +69,7 @@
             tagColor: 'primary',
             desc: 'End-of-day account statement (HSBC UK → Citi US). Routes directly without aggregation. No relay configured for this BIC pair.',
             expects: [
-                'Routed to <code>REPORTING.Q1</code> (routing rule match: HSBCGB2L / CITIUS33)',
+                'Routed to <code>RECON.INTELLIMATCH.IN</code> (routing rule match: HSBCGB2L / CITIUS33)',
                 'No SWIFT relay (relay config is for DEUTDEFF / BNPAFRPP only)',
                 'Status: <code>COMPLETED</code>'
             ],
@@ -111,7 +111,7 @@
             desc: 'Final page of the 2-page statement (HSBC UK → Citi US). Has intermediate opening (:60M:) and final closing (:62F:). Completes aggregation and triggers routing.',
             expects: [
                 'Aggregation completed: <code>COMPLETED</code> (2/2 pages)',
-                'Combined statement routed to <code>REPORTING.Q1</code>',
+                'Combined statement routed to <code>RECON.INTELLIMATCH.IN</code>',
                 'No SWIFT relay (relay config is for DEUTDEFF / BNPAFRPP only)'
             ],
             msg: `{1:F01HSBCGB2LAXXX0000000000}{2:I940CITIUS33XXXXN}{4:
@@ -130,8 +130,8 @@
             tagColor: 'warning',
             desc: 'Intraday transaction report (Deutsche Bank → BNP Paribas). Different account and BICs from MT940/950. Both routing and relay match this BIC pair.',
             expects: [
-                'Routed to <code>INTRADAY.Q1</code> (routing rule: DEUTDEFF / BNPAFRPP / acct 987654321)',
-                'Relayed to <code>SWIFT.RELAY</code> (relay config match: DEUTDEFF / BNPAFRPP)',
+                'Routed to <code>CASH.CALYPSO.INTRADAY</code> (routing rule: DEUTDEFF / BNPAFRPP / acct 987654321)',
+                'Relayed to <code>SWIFT.ALLIANCE.OUTBOUND</code> (relay config match: DEUTDEFF / BNPAFRPP)',
                 'Status: <code>COMPLETED</code>'
             ],
             msg: `{1:F01DEUTDEFFAXXX0000000000}{2:I942BNPAFRPPXXXXN}{4:
@@ -150,9 +150,9 @@
             title: 'MT950 Statement Message',
             tag: 'MT950',
             tagColor: 'success',
-            desc: 'Account statement (HSBC UK → Citi US). Routes to REPORTING.Q2 via CSV-loaded rule. No relay for this BIC pair.',
+            desc: 'Account statement (HSBC UK → Citi US). Routes to GL.SAP.STMT.FEED via CSV-loaded rule. No relay for this BIC pair.',
             expects: [
-                'Routed to <code>REPORTING.Q2</code> (CSV rule: HSBCGB2L / CITIUS33 / acct 123456789)',
+                'Routed to <code>GL.SAP.STMT.FEED</code> (CSV rule: HSBCGB2L / CITIUS33 / acct 123456789)',
                 'No SWIFT relay (relay config is for DEUTDEFF / BNPAFRPP only)',
                 'Status: <code>COMPLETED</code>'
             ],
@@ -173,7 +173,7 @@
             tagColor: 'secondary',
             desc: 'Balance report (Commerzbank → SocGen). Uses yet another BIC pair — matches the wildcard routing rule for MT941.',
             expects: [
-                'Routed to <code>DEFAULT.Q1</code> (wildcard CSV rule: * / MT941 / * / *)',
+                'Routed to <code>ARCHIVE.COMPLI.STORE</code> (wildcard CSV rule: * / MT941 / * / *)',
                 'No SWIFT relay (no relay config for COBADEFF / SOGEFRPP)',
                 'Status: <code>COMPLETED</code>'
             ],

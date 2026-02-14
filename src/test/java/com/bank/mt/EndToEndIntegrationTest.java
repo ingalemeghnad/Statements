@@ -51,15 +51,15 @@ class EndToEndIntegrationTest {
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
 
         boolean hasReportingQ1 = deliveries.stream()
-                .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination())
+                .anyMatch(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination())
                         && "123456789".equals(d.getAccountNumber()));
 
-        assertTrue(hasReportingQ1, "Expected delivery to REPORTING.Q1, got: " + deliveries.stream()
+        assertTrue(hasReportingQ1, "Expected delivery to RECON.INTELLIMATCH.IN, got: " + deliveries.stream()
                 .map(d -> d.getDestination() + "/" + d.getAccountNumber()).toList());
 
         // Relay config is for DEUTDEFF/BNPAFRPP, not HSBCGB2L/CITIUS33 — no relay expected
         boolean hasSwiftRelay = deliveries.stream()
-                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination()));
+                .anyMatch(d -> "SWIFT.ALLIANCE.OUTBOUND".equals(d.getDestination()));
         assertFalse(hasSwiftRelay, "No relay expected for HSBCGB2L/CITIUS33 BIC pair");
 
         // Verify ODS audit trail was created
@@ -99,8 +99,8 @@ class EndToEndIntegrationTest {
         assertFalse(deliveries.isEmpty(), "Expected deliveries after multi-page aggregation");
 
         boolean hasReporting = deliveries.stream()
-                .anyMatch(d -> "REPORTING.Q1".equals(d.getDestination()));
-        assertTrue(hasReporting, "Expected delivery to REPORTING.Q1 for multi-page MT940");
+                .anyMatch(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination()));
+        assertTrue(hasReporting, "Expected delivery to RECON.INTELLIMATCH.IN for multi-page MT940");
 
         // Verify all related ODS records are COMPLETED
         List<MtMessageOds> allOds = odsRepo.findAll();
@@ -116,7 +116,7 @@ class EndToEndIntegrationTest {
         rule.setMessageType("MT942");
         rule.setSenderBic("DEUTDEFF");
         rule.setReceiverBic("BNPAFRPP");
-        rule.setDestinationQueue("INTRADAY.Q1");
+        rule.setDestinationQueue("CASH.CALYPSO.INTRADAY");
         rule.setActive(true);
         rule.setSource(RuleSource.UI);
         ruleRepo.save(rule);
@@ -136,14 +136,14 @@ class EndToEndIntegrationTest {
 
         List<DeliveryRecord> deliveries = mockAdapter.getDeliveries();
         boolean hasIntradayQ1 = deliveries.stream()
-                .anyMatch(d -> "INTRADAY.Q1".equals(d.getDestination()));
-        assertTrue(hasIntradayQ1, "Expected delivery to INTRADAY.Q1 for MT942, got: " +
+                .anyMatch(d -> "CASH.CALYPSO.INTRADAY".equals(d.getDestination()));
+        assertTrue(hasIntradayQ1, "Expected delivery to CASH.CALYPSO.INTRADAY for MT942, got: " +
                 deliveries.stream().map(DeliveryRecord::getDestination).toList());
 
         // Relay config matches DEUTDEFF/BNPAFRPP — relay expected
         boolean hasSwiftRelay = deliveries.stream()
-                .anyMatch(d -> "SWIFT.RELAY".equals(d.getDestination()));
-        assertTrue(hasSwiftRelay, "Expected relay to SWIFT.RELAY for DEUTDEFF/BNPAFRPP BIC pair");
+                .anyMatch(d -> "SWIFT.ALLIANCE.OUTBOUND".equals(d.getDestination()));
+        assertTrue(hasSwiftRelay, "Expected relay to SWIFT.ALLIANCE.OUTBOUND for DEUTDEFF/BNPAFRPP BIC pair");
     }
 
     @Test
