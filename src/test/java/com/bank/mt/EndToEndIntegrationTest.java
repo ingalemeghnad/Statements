@@ -10,12 +10,14 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class EndToEndIntegrationTest {
@@ -101,6 +103,25 @@ class EndToEndIntegrationTest {
         boolean hasReporting = deliveries.stream()
                 .anyMatch(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination()));
         assertTrue(hasReporting, "Expected delivery to RECON.INTELLIMATCH.IN for multi-page MT940");
+
+        // Verify combined message has single header, merged transactions, no intermediate balances
+        DeliveryRecord delivered = deliveries.stream()
+                .filter(d -> "RECON.INTELLIMATCH.IN".equals(d.getDestination()))
+                .findFirst().orElseThrow();
+        String raw = delivered.getRawMessage();
+        // Single header from page 1
+        assertTrue(raw.startsWith("{1:F01HSBCGB2L"), "Combined should have single Block 1 header");
+        assertEquals(1, raw.split("\\{1:").length - 1, "Should have exactly one Block 1 header");
+        assertEquals(1, raw.split("\\{2:").length - 1, "Should have exactly one Block 2 header");
+        // Opening balance from page 1, closing from page 2
+        assertTrue(raw.contains(":60F:"), "Combined should have :60F: from first page");
+        assertTrue(raw.contains(":62F:"), "Combined should have :62F: from last page");
+        // No intermediate balance tags
+        assertFalse(raw.contains(":60M:"), "Combined should NOT have intermediate opening :60M:");
+        assertFalse(raw.contains(":62M:"), "Combined should NOT have intermediate closing :62M:");
+        // Transactions from both pages
+        assertTrue(raw.contains("DR200,"), "Combined should have transaction from page 1");
+        assertTrue(raw.contains("CR1000,"), "Combined should have transaction from page 2");
 
         // Verify all related ODS records are COMPLETED
         List<MtMessageOds> allOds = odsRepo.findAll();

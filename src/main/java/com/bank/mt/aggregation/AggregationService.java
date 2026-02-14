@@ -13,10 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Handles multi-page statement aggregation.
@@ -146,14 +145,104 @@ public class AggregationService {
         combined.setReceiverBic(lastPage.getReceiverBic());
         combined.setTransactionReference(lastPage.getTransactionReference());
 
-        // Concatenate all page raw messages in page order
-        String combinedRaw = agg.getPages().stream()
-                .sorted((a, b) -> Integer.compare(a.getPageNumber(), b.getPageNumber()))
-                .map(MtAggregationPage::getRawMessage)
-                .collect(Collectors.joining("\n---PAGE-BREAK---\n"));
-        combined.setRawMessage(combinedRaw);
+        List<MtAggregationPage> sortedPages = agg.getPages().stream()
+                .sorted(Comparator.comparingInt(MtAggregationPage::getPageNumber))
+                .toList();
 
+        combined.setRawMessage(buildCombinedRawMessage(sortedPages));
         return combined;
+    }
+
+    /**
+     * Builds a single combined SWIFT FIN message from multiple pages.
+     *
+     * Uses the header (Block 1 + Block 2) from the first page,
+     * takes header tags (:20:, :25:, :28C:) and opening balance (:60F:) from page 1,
+     * merges transaction lines (:61:, :86:) from all pages in order,
+     * and takes the final closing balance (:62F:) and summary tags from the last page.
+     *
+     * Intermediate balance tags (:60M:, :62M:) are discarded.
+     */
+    private String buildCombinedRawMessage(List<MtAggregationPage> sortedPages) {
+        String firstPageRaw = sortedPages.get(0).getRawMessage();
+
+        // Extract SWIFT header (Block 1 + Block 2) from first page
+        String header = extractSwiftHeader(firstPageRaw);
+
+        // Merge Block 4 body from all pages
+        List<String> combinedBody = new ArrayList<>();
+        for (int i = 0; i < sortedPages.size(); i++) {
+            List<String> bodyLines = extractBlock4Lines(sortedPages.get(i).getRawMessage());
+            boolean isFirst = (i == 0);
+            boolean isLast = (i == sortedPages.size() - 1);
+
+            for (String line : bodyLines) {
+                String tag = extractTag(line);
+                if (tag == null) continue;
+
+                // Skip intermediate balance tags — not part of combined output
+                if ("60M".equals(tag) || "62M".equals(tag)) continue;
+
+                // Header + opening balance tags: only from first page
+                if (HEADER_TAGS.contains(tag)) {
+                    if (isFirst) combinedBody.add(line);
+                    continue;
+                }
+
+                // Closing balance + summary tags: only from last page
+                if (CLOSING_TAGS.contains(tag)) {
+                    if (isLast) combinedBody.add(line);
+                    continue;
+                }
+
+                // Transaction lines (:61:, :86:, etc.): from all pages
+                combinedBody.add(line);
+            }
+        }
+
+        // Assemble: header + Block 4
+        StringBuilder sb = new StringBuilder();
+        sb.append(header).append("{4:\n");
+        for (String line : combinedBody) {
+            sb.append(line).append("\n");
+        }
+        sb.append("-}");
+        return sb.toString();
+    }
+
+    // Tags from first page only: header fields + opening balance
+    private static final Set<String> HEADER_TAGS = Set.of(
+            "20", "21", "25", "28C", "34F", "13D", "60F");
+
+    // Tags from last page only: closing balance + summary
+    private static final Set<String> CLOSING_TAGS = Set.of(
+            "62F", "64", "65", "90D", "90C");
+
+    private static final Pattern SWIFT_HEADER_PATTERN =
+            Pattern.compile("(\\{1:[^}]+\\}\\{2:[^}]+\\})");
+
+    private static final Pattern BLOCK4_BODY_PATTERN =
+            Pattern.compile("\\{4:\\s*\\n?(.*?)\\n?-\\}", Pattern.DOTALL);
+
+    private String extractSwiftHeader(String raw) {
+        Matcher m = SWIFT_HEADER_PATTERN.matcher(raw);
+        return m.find() ? m.group(1) : "";
+    }
+
+    private List<String> extractBlock4Lines(String raw) {
+        Matcher m = BLOCK4_BODY_PATTERN.matcher(raw);
+        if (!m.find()) return List.of();
+        return Arrays.stream(m.group(1).split("\n"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
+
+    private String extractTag(String line) {
+        if (!line.startsWith(":")) return null;
+        int endColon = line.indexOf(':', 1);
+        if (endColon <= 1) return null;
+        return line.substring(1, endColon);
     }
 
     private String computeChecksum(String content) {
